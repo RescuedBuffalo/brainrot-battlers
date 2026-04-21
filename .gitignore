@@ -1,0 +1,17 @@
+# Roblox place files (binary or XML) -- the source of truth is the Rojo project.
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+
+# Local editor junk
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Rojo build output
+build/
+*.rbxl.lock
+
+# Logs
+*.log

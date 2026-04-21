@@ -1,0 +1,45 @@
+{
+  "name": "BrainrotBattlegrounds",
+  "tree": {
+    "$className": "DataModel",
+
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "GameServer": {
+        "$path": "src/server/GameServer"
+      },
+      "BootstrapInstances": {
+        "$path": "src/server/BootstrapInstances.server.luau"
+      }
+    },
+
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$path": "src/client"
+      }
+    },
+
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": {
+        "StreamingEnabled": false
+      }
+    },
+
+    "Lighting": {
+      "$className": "Lighting"
+    },
+
+    "SoundService": {
+      "$className": "SoundService"
+    }
+  }
+}
