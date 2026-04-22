@@ -44,6 +44,7 @@ type PlayerState = {
     collection: { [string]: string },
     bestRound: number,
     totalWins: number,
+    tutorialDone: boolean,
 }
 
 local states: { [number]: PlayerState } = {}
@@ -70,6 +71,7 @@ local function newState(userId: number): PlayerState
         collection = profile.collection,
         bestRound = profile.bestRound,
         totalWins = profile.totalWins,
+        tutorialDone = profile.tutorialDone or false,
     }
     return state
 end
@@ -96,6 +98,7 @@ local function snapshotForClient(state: PlayerState)
         collection = state.collection,
         bestRound = state.bestRound,
         totalWins = state.totalWins,
+        tutorialDone = state.tutorialDone,
     }
 end
 
@@ -228,6 +231,16 @@ end
 local function runCombat(state: PlayerState)
     if state.phase ~= "shop" then return end
     if #state.board == 0 then return end  -- must have at least 1 unit
+
+    -- First-fight hook: mark tutorial complete server-side so returning players
+    -- skip the intro. Client-side Tutorial already self-dismisses on the fight
+    -- step; this just persists it.
+    if not state.tutorialDone then
+        state.tutorialDone = true
+        if DataService.SetTutorialDone then
+            DataService.SetTutorialDone(state.userId)
+        end
+    end
 
     state.phase = "combat"
     local enemyBoard, roundName = normalizeEnemyBoard(state.round)

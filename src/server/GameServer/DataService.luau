@@ -45,6 +45,7 @@ type Profile = {
     firstPlayed: number,
     lastPlayed: number,
     sessionLock: Lock?,
+    tutorialDone: boolean,
 }
 
 local STORE_NAME = "Profiles_v1"
@@ -73,7 +74,16 @@ local function newProfile(): Profile
         firstPlayed = now,
         lastPlayed = now,
         sessionLock = nil,
+        tutorialDone = false,
     }
+end
+
+-- Migrate older profiles (pre-Phase 11) that predate tutorialDone.
+local function migrate(p: any): Profile
+    if p.tutorialDone == nil then
+        p.tutorialDone = false
+    end
+    return p
 end
 
 -- Wrap a DataStore op with exponential-backoff retries. Returns (ok, result).
@@ -136,7 +146,7 @@ local function loadWithLock(userId: number): Profile?
 
     local ok = withRetry("UpdateAsync(load)", function()
         store:UpdateAsync(keyFor(userId), function(old)
-            local profile: Profile = old or newProfile()
+            local profile: Profile = old and migrate(old) or newProfile()
             if profile.sessionLock then
                 local age = os.time() - profile.sessionLock.timestamp
                 if profile.sessionLock.jobId ~= jobId and age < LOCK_TTL then
@@ -251,6 +261,12 @@ function DataService.UpgradeCollection(userId: number, unitId: string, rarity: s
     p.collection[unitId] = rarity
     dirty[userId] = true
     return true
+end
+
+function DataService.SetTutorialDone(userId: number)
+    local p = DataService.Load(userId)
+    p.tutorialDone = true
+    dirty[userId] = true
 end
 
 -- Update run stats (best round + total wins). Takes max-of so we never
