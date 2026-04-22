@@ -180,6 +180,12 @@ local function applyPostCombat(state: PlayerState, result: any)
         if state.round > state.bestRound then
             state.bestRound = state.round
         end
+        -- Persist new stats to the profile so they survive server shutdown or
+        -- relogin. DataService.BumpStats marks the profile dirty; autosave /
+        -- PlayerRemoving handle the actual DataStore write.
+        if DataService.BumpStats then
+            DataService.BumpStats(state.userId, state.bestRound, state.totalWins)
+        end
     end
  end
 
