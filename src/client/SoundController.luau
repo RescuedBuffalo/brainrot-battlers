@@ -87,6 +87,31 @@ local MUSIC = {
     combat = { id = PING, volume = 0 },
 }
 
+-- Phase 12: per-ability voice barks. Same pattern as REGISTRY -- pitch-shift
+-- a couple of built-in sounds to give distinct personalities until a real VO
+-- pass happens. Entries are keyed by the `name` field in a Moment definition's
+-- vo layer.
+local VO_REGISTRY = {
+    capuchino_leap   = { id = PING,  volume = 0.9, pitch = 0.45 },
+    ohio_collapse    = { id = GETUP, volume = 0.9, pitch = 0.6 },
+}
+
+function SoundController.PlayVO(name: string)
+    local cfg = VO_REGISTRY[name]
+    if not cfg then return end
+    local s = Instance.new("Sound")
+    s.Name = "VO_" .. name
+    s.SoundId = cfg.id
+    s.Volume = cfg.volume or 0.8
+    s.PlaybackSpeed = cfg.pitch or 1
+    s.Parent = SoundService
+    s:Play()
+    s.Ended:Connect(function() s:Destroy() end)
+    task.delay(4, function()
+        if s.Parent then s:Destroy() end
+    end)
+end
+
 function SoundController.PlayMusic(name: string, fadeSec: number?)
     fadeSec = fadeSec or 1.0
     local cfg = MUSIC[name]

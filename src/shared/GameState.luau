@@ -26,6 +26,12 @@ export type ShopSlot = {
     sold: boolean,
 }
 
+export type ActiveCard = {
+    id: string,
+    scope: "run" | "next_combat",
+    payload: { any },     -- card-specific runtime state (e.g. targeted unitId)
+}
+
 export type PlayerState = {
     phase: Phase,
     round: number,
@@ -41,6 +47,12 @@ export type PlayerState = {
     collection: { [UnitId]: Rarity },
     bestRound: number,
     totalWins: number,
+
+    -- Phase 12 additions -- run-map shape
+    runMap: any?,         -- RunMap.Map; typed as any here to avoid a cyclic require
+    currentNodeId: string?,
+    activeCards: { ActiveCard },
+    combatsWon: number,   -- for Sigma Grindset stacking
 }
 
 export type CombatUnit = {

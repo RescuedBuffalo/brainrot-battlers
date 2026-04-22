@@ -138,6 +138,62 @@ function CameraController.Init()
     end
 end
 
+-- ---------- Phase 12: moment-layer helpers ---------- --
+-- punch applies a brief CFrame offset on top of the current preset, eased
+-- back to the baseline. shake adds randomized offsets at `intensity` magnitude
+-- across `durationMs`. Both must restore the preset cleanly when done.
+
+local activeOffsets: { RBXScriptConnection } = {}
+
+local function applyTransientOffset(fn: () -> CFrame, durationMs: number)
+    local start = os.clock()
+    local duration = durationMs / 1000
+    local baseCFrame: CFrame = camera.CFrame
+    -- For orbit mode we re-read every frame since the baseline is moving.
+    local conn
+    conn = RunService.RenderStepped:Connect(function()
+        local t = os.clock() - start
+        if t >= duration then
+            conn:Disconnect()
+            -- Don't forcibly reset; the baseline preset (orbit or static) will
+            -- reassert itself on the next frame via its own driver.
+            return
+        end
+        local offset = fn()
+        camera.CFrame = camera.CFrame * offset
+    end)
+    table.insert(activeOffsets, conn)
+end
+
+-- direction is a unit-ish vector; the punch pushes along it for intensity
+-- magnitude then eases back.
+function CameraController.punch(direction: Vector3, intensity: number, durationMs: number)
+    local start = os.clock()
+    local duration = math.max(0.05, durationMs / 1000)
+    local dir = direction.Magnitude > 0 and direction.Unit or Vector3.new(0, 0, -1)
+    applyTransientOffset(function()
+        local t = (os.clock() - start) / duration
+        -- Ease-out curve: starts at 1, decays to 0.
+        local k = 1 - math.min(1, t)
+        local mag = intensity * k
+        return CFrame.new(dir * mag)
+    end, durationMs)
+end
+
+function CameraController.shake(intensity: number, durationMs: number)
+    local start = os.clock()
+    local duration = math.max(0.05, durationMs / 1000)
+    applyTransientOffset(function()
+        local t = (os.clock() - start) / duration
+        local k = 1 - math.min(1, t)
+        local mag = intensity * k
+        local rx = (math.random() * 2 - 1) * mag
+        local ry = (math.random() * 2 - 1) * mag
+        local rz = (math.random() * 2 - 1) * mag
+        return CFrame.new(rx, ry, rz)
+    end, durationMs)
+end
+
 -- Force = true re-applies the preset even if the phase hasn't changed;
 -- used when Roblox resets CameraType on character respawn.
 function CameraController.SetPhase(phase: string, force: boolean?)

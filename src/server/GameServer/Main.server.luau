@@ -17,6 +17,8 @@ local CombatEngine   = require(serverFolder:WaitForChild("CombatEngine"))
 local ShopService    = require(serverFolder:WaitForChild("ShopService"))
 local CrateService   = require(serverFolder:WaitForChild("CrateService"))
 local LobbyService   = require(serverFolder:WaitForChild("LobbyService"))
+local RunMapService  = require(serverFolder:WaitForChild("RunMapService"))
+local CardService    = require(serverFolder:WaitForChild("CardService"))
 local GameManager    = require(serverFolder:WaitForChild("GameManager"))
 
 local deps = {
@@ -27,6 +29,8 @@ local deps = {
     ShopService = ShopService,
     CrateService = CrateService,
     LobbyService = LobbyService,
+    RunMapService = RunMapService,
+    CardService = CardService,
     GameManager = GameManager,
     Remotes = ReplicatedStorage:WaitForChild("Remotes"),
     Shared = sharedFolder,
@@ -39,6 +43,8 @@ CombatEngine.Init(deps)
 ShopService.Init(deps)
 CrateService.Init(deps)
 LobbyService.Init(deps)
+RunMapService.Init(deps)
+CardService.Init(deps)
 GameManager.Init(deps)
 
 -- ---------- remote wiring ---------- --
@@ -78,6 +84,21 @@ end)
 remotes.OpenCrate.OnServerEvent:Connect(function(player)
     GameManager.HandleOpenCrate(player)
 end)
+
+-- Phase 12 remotes
+local selectNextNode = remotes:FindFirstChild("SelectNextNode")
+if selectNextNode then
+    selectNextNode.OnServerEvent:Connect(function(player, payload)
+        GameManager.HandleSelectNextNode(player, payload)
+    end)
+end
+
+local cardChoice = remotes:FindFirstChild("CardChoice")
+if cardChoice then
+    cardChoice.OnServerEvent:Connect(function(player, payload)
+        GameManager.HandleCardChoice(player, payload)
+    end)
+end
 
 -- Sync request -- client can ask for its current state at any time (e.g. on
 -- character respawn or UI refresh).

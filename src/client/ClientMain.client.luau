@@ -6,12 +6,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local script_ = script
 local parentScripts = script_.Parent
 
-local UIController    = require(parentScripts:WaitForChild("UIController"))
-local CombatRenderer  = require(parentScripts:WaitForChild("CombatRenderer"))
-local Input           = require(parentScripts:WaitForChild("Input"))
-local SoundController = require(parentScripts:WaitForChild("SoundController"))
-local CameraController = require(parentScripts:WaitForChild("CameraController"))
-local Tutorial        = require(parentScripts:WaitForChild("Tutorial"))
+local UIController        = require(parentScripts:WaitForChild("UIController"))
+local CombatRenderer      = require(parentScripts:WaitForChild("CombatRenderer"))
+local Input               = require(parentScripts:WaitForChild("Input"))
+local SoundController     = require(parentScripts:WaitForChild("SoundController"))
+local CameraController    = require(parentScripts:WaitForChild("CameraController"))
+local Tutorial            = require(parentScripts:WaitForChild("Tutorial"))
+-- Phase 12
+local RunMapController    = require(parentScripts:WaitForChild("RunMapController"))
+local CardDraftController = require(parentScripts:WaitForChild("CardDraftController"))
+local MomentService       = require(parentScripts:WaitForChild("MomentService"))
 
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local stateUpdate  = remotes:WaitForChild("StateUpdate")
@@ -26,6 +30,9 @@ local deps = {
     SoundController = SoundController,
     CameraController = CameraController,
     Tutorial = Tutorial,
+    RunMapController = RunMapController,
+    CardDraftController = CardDraftController,
+    MomentService = MomentService,
 }
 
 SoundController.Init()
@@ -34,6 +41,9 @@ Tutorial.Init()
 UIController.Init(deps)
 CombatRenderer.Init(deps)
 Input.Init(deps)
+RunMapController.Init(deps)
+CardDraftController.Init(deps)
+MomentService.Init(deps)
 
 -- Global click SFX: every TextButton / ImageButton in PlayerGui plays
 -- "click" on MouseButton1Click. Cheap way to get auditory feedback on the
@@ -54,6 +64,8 @@ local lastPhase: string? = nil
 
 stateUpdate.OnClientEvent:Connect(function(state)
     UIController.Render(state)
+    RunMapController.Render(state)
+    CardDraftController.Render(state)
     if state.phase ~= lastPhase then
         lastPhase = state.phase
         CameraController.SetPhase(state.phase)
@@ -66,8 +78,6 @@ stateUpdate.OnClientEvent:Connect(function(state)
             SoundController.Play("defeat")
         end
     end
-    -- First-run tutorial hook: starts on first state snapshot, advances
-    -- as the player performs each step, persists completion to profile.
     Tutorial.Start(state)
     Tutorial.Tick(state)
 end)
