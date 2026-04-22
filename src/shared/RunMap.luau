@@ -32,10 +32,11 @@ export type Map = {
     layerCount: number,
 }
 
--- v1 shape: 9 layers total (1 fixed start combat, 7 mid-layers, 1 boss).
--- Width per middle layer alternates to give a nice silhouette.
-local LAYER_COUNT = 9
-local MIDDLE_WIDTHS = { 2, 3, 2, 3, 2, 3, 2 }  -- 7 entries -> layers 2..8
+-- v1 shape: 7 layers total (1 fixed start combat, 5 mid-layers, 1 boss).
+-- Middle widths chosen so total nodes = 10 (spec range 8-12). The 1-2-2-2-1
+-- diamond silhouette gives a strong decision moment in the middle.
+local LAYER_COUNT = 7
+local MIDDLE_WIDTHS = { 1, 2, 2, 2, 1 }  -- 5 entries -> layers 2..6; 8 mid -> 10 total
 
 -- Weighted pool for middle-layer node types. Keyed percentages sum to 100.
 -- Elite slots are reserved explicitly (one guaranteed somewhere in layers 5-7)

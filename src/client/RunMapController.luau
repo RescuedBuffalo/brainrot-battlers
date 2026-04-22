@@ -276,11 +276,15 @@ function RunMapController.ToggleMap()
     end
 end
 
+-- Cache last state so ToggleMap can rebuild the canvas even when the
+-- overlay opens between state updates.
+local lastRenderedState: any = nil
+
 function RunMapController.Render(state: any)
     if not state then return end
-    if mapOverlay and mapOverlay.Visible then
-        renderMap(state)
-    end
+    lastRenderedState = state
+    -- Always rebuild the canvas -- it's a handful of buttons, not a hot path.
+    renderMap(state)
     renderNodeChoice(state)
 end
 
