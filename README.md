@@ -39,15 +39,29 @@ src/
 
 ## Running locally
 
-Requires [Rojo](https://rojo.space/) 7.x.
+Requires [Aftman](https://github.com/LPGhatguy/aftman) (toolchain manager) and
+the [Rojo Studio plugin](https://rojo.space/docs/v7/getting-started/installation/#install-the-roblox-studio-plugin).
 
 ```bash
-rojo serve default.project.json
+# one-time, installs the pinned Rojo version from aftman.toml
+aftman install
+
+# every time you want to sync
+rojo serve
 ```
 
-In Studio, install the Rojo plugin and connect. First server boot will run
-`BootstrapInstances.server.luau` which creates the RemoteEvents, arena tile
-grid, and 10 placeholder unit models.
+In Studio: open an empty baseplate, install the Rojo plugin, click Connect
+(default port 34872). First server boot runs `BootstrapInstances.server.luau`
+which creates the RemoteEvents, arena tile grid, and 10 placeholder unit
+models idempotently.
+
+### Without Aftman
+
+If you don't want Aftman, install Rojo 7.x via your preferred method (cargo,
+`pip install rojo-rbx`, prebuilt binary) and run `rojo serve` directly.
+Aftman is intercepting calls to `rojo` in this directory because it's in
+your PATH — either add Rojo to your user-global `~/.aftman/aftman.toml`, or
+run `aftman install` here.
 
 ## Phase status
 
