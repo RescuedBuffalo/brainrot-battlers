@@ -523,14 +523,18 @@ function CombatEngine.Resolve(playerBoard, enemyBoard, round: number?, cardMods:
                 end
                 actor.mana = 0
 
-                -- Tralalero Surge hook: when a unit with the configured
-                -- source trait casts, all allies of allyTrait gain mana.
-                -- cardMods.manaShare is set up by CardService.BuildCombatMods.
+                -- Tralalero Surge hook: when a unit matching the source
+                -- definition casts, all allies of allyTrait gain mana.
+                -- Source can be specified by sourceUnitId (specific unit,
+                -- spec-correct for tralalero_surge) or sourceTrait (fallback
+                -- for trait-scoped designs).
                 local share = engine.cardMods and engine.cardMods.manaShare
                 if share and actor.side == "player" then
                     local def = UnitDefinitions[actor.unitId]
                     local hasSource = false
-                    if def and def.traits then
+                    if share.sourceUnitId then
+                        hasSource = (actor.unitId == share.sourceUnitId)
+                    elseif share.sourceTrait and def and def.traits then
                         for _, t in ipairs(def.traits) do
                             if t == share.sourceTrait then hasSource = true; break end
                         end

@@ -93,10 +93,13 @@ APPLIERS.trait_ad_per_win = function(state, card)
 end
 
 APPLIERS.trait_cast_mana_share = function(state, card)
+    -- Supports both sourceTrait (legacy) and sourceUnitId (spec-correct for
+    -- tralalero_surge). CombatEngine's hook reads whichever is present.
     table.insert(state.activeCards, {
         id = card.id, scope = card.scope,
         payload = {
             sourceTrait = card.effect.sourceTrait,
+            sourceUnitId = card.effect.sourceUnitId,
             allyTrait = card.effect.allyTrait,
             amount = card.effect.amount,
         },
@@ -156,7 +159,12 @@ function CardService.BuildCombatMods(state): any
             local bonus = math.min(p.cap or 0.5, stacks * (p.perWin or 0))
             mods.traitAdBonus[p.trait] = (mods.traitAdBonus[p.trait] or 0) + bonus
         elseif active.id == "tralalero_surge" then
-            mods.manaShare = { sourceTrait = p.sourceTrait, allyTrait = p.allyTrait, amount = p.amount }
+            mods.manaShare = {
+                sourceTrait = p.sourceTrait,
+                sourceUnitId = p.sourceUnitId,
+                allyTrait = p.allyTrait,
+                amount = p.amount,
+            }
         end
     end
 
@@ -174,16 +182,44 @@ function CardService.ExpireNextCombatCards(state)
     state.activeCards = kept
 end
 
--- Consume the Skibidi Portal freeReroll for the next shop interaction.
-function CardService.ConsumeFreeReroll(state): boolean
-    for i, c in ipairs(state.activeCards or {}) do
+-- Phase 12 spec P0-3: Skibidi Portal grants UNLIMITED free rerolls for the
+-- next shop visit (not just one). GameManager reads HasFreeRerollFlag when
+-- entering a shop phase, and calls ClearFreeRerollFlag when the visit ends
+-- (combat start from pre-combat shop, or HandleContinue from shop node).
+
+function CardService.HasFreeRerollFlag(state): boolean
+    for _, c in ipairs(state.activeCards or {}) do
         if c.id == "skibidi_portal" and c.payload and c.payload.freeReroll then
-            -- Remove the card: the full effect is now spent
-            c.payload.freeReroll = false
             return true
         end
     end
     return false
+end
+
+function CardService.ClearFreeRerollFlag(state)
+    local kept = {}
+    for _, c in ipairs(state.activeCards or {}) do
+        if c.id == "skibidi_portal" then
+            if c.payload then c.payload.freeReroll = false end
+            -- If the extraEnemies half has already fired (next_combat scope
+            -- drops through ExpireNextCombatCards), the card gets garbage-
+            -- collected naturally. Here we just clear the freeReroll half;
+            -- the card stays on activeCards if extraEnemies is still pending.
+            local stillLive = c.payload and c.payload.extraEnemies and c.payload.extraEnemies > 0
+            if stillLive then
+                table.insert(kept, c)
+            end
+        else
+            table.insert(kept, c)
+        end
+    end
+    state.activeCards = kept
+end
+
+-- Backward-compat alias for the former one-shot consumer; now equivalent to
+-- HasFreeRerollFlag since the visit-wide flag is the single source of truth.
+function CardService.ConsumeFreeReroll(state): boolean
+    return CardService.HasFreeRerollFlag(state)
 end
 
 return CardService

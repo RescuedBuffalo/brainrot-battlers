@@ -1,12 +1,9 @@
 --!strict
--- Declarative moment definitions. Each entry is keyed by the moment name
--- (matches ability ID so MomentService can look it up from a CombatEvent's
--- source unitId). A moment defines which layers fire, with what intensity,
--- and for how long.
---
--- v1 pass: only capuchino_shadow_leap is fully tuned. Other abilities still
--- render via the existing CombatRenderer path and do NOT fire moments --
--- opting in requires a real entry here.
+-- Declarative moment definitions. Keyed by "<unitId>_<abilitySlug>" where
+-- abilitySlug is the UnitDefinitions abilityName lowercased with spaces
+-- replaced by underscores (e.g. "Shadow Leap" -> "shadow_leap"). Only
+-- abilities with an entry here trigger a Moment; all others fall through
+-- to the normal CombatRenderer path.
 
 local MomentDefinitions = {}
 
@@ -22,34 +19,48 @@ export type MomentDef = {
     [LayerName]: Layer,
 }
 
--- Rarity/trait-themed colors we reuse.
-local OHIO_PURPLE = Color3.fromRGB(160, 60, 220)
-local CAPUCHINO_BLOOD = Color3.fromRGB(200, 20, 50)
-
--- Keyed by unitId (each unit has exactly one ability in this game).
+-- v1: only capuchino_shadow_leap is fully tuned per spec Appendix B. Other
+-- abilities intentionally have no moment entry -- they render through the
+-- existing ability flash + shoot/aoe/dmg pipeline untouched.
+--
+-- Values below are the spec's Appendix B literals. Iterate them during
+-- playtesting (Phase 12 step 11 in the roadmap) if the feel needs adjustment.
 MomentDefinitions.MOMENTS = {
-    capuchino = {
-        cameraPunch   = { intensity = 0.6, durationMs = 240, direction = Vector3.new(0, -1, 0.5) },
-        timeDilation  = { factor = 0.35, durationMs = 320 },
-        vignette      = { color = CAPUCHINO_BLOOD, alpha = 0.55, durationMs = 360 },
-        hitStop       = { targetMs = 110 },
-        particleBurst = { template = "ShadowLeap", count = 45, color = CAPUCHINO_BLOOD },
-        bigNumber     = { scale = 2.2, color = CAPUCHINO_BLOOD },
-        screenShake   = { intensity = 0.7, durationMs = 220 },
-        vo            = { name = "capuchino_leap", volume = 1.0 },
-    },
-
-    -- Placeholder for ohio Reality Collapse -- stubbed here so other
-    -- developers can test, but not in v1 showcase scope.
-    ohio = {
-        cameraPunch   = { intensity = 1.0, durationMs = 220, direction = Vector3.new(0, -1.5, 0) },
-        timeDilation  = { factor = 0.35, durationMs = 280 },
-        vignette      = { color = OHIO_PURPLE, alpha = 0.55, durationMs = 320 },
-        hitStop       = { targetMs = 90 },
-        particleBurst = { template = "OhioCollapse", count = 60, color = OHIO_PURPLE },
-        bigNumber     = { scale = 1.8, color = OHIO_PURPLE },
-        screenShake   = { intensity = 0.9, durationMs = 240 },
-        vo            = { name = "ohio_collapse", volume = 1.0 },
+    capuchino_shadow_leap = {
+        cameraPunch = {
+            direction = Vector3.new(0, 0, -1),
+            intensity = 0.8,
+            durationMs = 200,
+        },
+        timeDilation = {
+            factor = 0.35,
+            durationMs = 280,
+        },
+        vignette = {
+            color = Color3.fromRGB(180, 40, 60),   -- blood-red, shadow-assassin
+            alpha = 0.55,
+            durationMs = 320,
+        },
+        hitStop = {
+            targetMs = 90,
+        },
+        particleBurst = {
+            template = "ShadowLeapImpact",          -- placeholder
+            count = 60,
+            color = Color3.fromRGB(240, 50, 80),
+        },
+        bigNumber = {
+            scale = 1.7,
+            color = Color3.fromRGB(240, 50, 80),
+        },
+        screenShake = {
+            intensity = 0.7,
+            durationMs = 180,
+        },
+        vo = {
+            name = "capuchino_leap",                -- VO_REGISTRY lookup key
+            volume = 1.0,
+        },
     },
 }
 

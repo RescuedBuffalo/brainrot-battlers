@@ -18,10 +18,31 @@ local Workspace = game:GetService("Workspace")
 
 local sharedFolder = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(sharedFolder:WaitForChild("Constants"))
+local UnitDefinitions = require(sharedFolder:WaitForChild("UnitDefinitions"))
 
 -- MomentService is required lazily via Init(deps) to avoid a require-time
 -- dependency (CombatRenderer is referenced by MomentService too).
 local MomentService
+
+-- Slugify an ability name into the MomentDefinitions key format:
+--   "Shadow Leap" -> "shadow_leap"
+-- Cached because it's called in the combat hot path.
+local slugCache: {[string]: string} = {}
+local function abilitySlug(abilityName: string): string
+    local cached = slugCache[abilityName]
+    if cached then return cached end
+    local s = abilityName:lower():gsub(" ", "_")
+    slugCache[abilityName] = s
+    return s
+end
+
+-- Build the full moment key from a source unit's unitId. Returns nil if
+-- the unit doesn't exist in UnitDefinitions or has no ability name.
+local function momentKeyFor(unitId: string): string?
+    local def = UnitDefinitions[unitId]
+    if not def or not def.abilityName then return nil end
+    return unitId .. "_" .. abilitySlug(def.abilityName)
+end
 
 local CombatRenderer = {}
 
@@ -252,19 +273,22 @@ handlers.ability = function(evt)
     local m = actorModels[evt.source]
     if m then flashAbility(m) end
 
-    -- Phase 12: fire a Moment if this unit has one defined. Additive to the
-    -- existing flashAbility + per-ability event handlers below (shoot/aoe/
-    -- dmg), so the moment layers stack on top of the normal visuals.
+    -- Phase 12: fire a Moment if this unit's ability has one defined.
+    -- Moment key is "<unitId>_<abilitySlug>" so abilities can be moment-ified
+    -- individually when a unit gets multiple abilities in future phases.
     if MomentService and m then
         local unitId = m:GetAttribute("UnitId")
         if unitId then
-            MomentService.play(unitId, {
-                sourceActorId = evt.source,
-                sourceModel = m,
-                targetActorId = nil,
-                targetModel = nil,
-                position = m:GetPivot().Position,
-            })
+            local key = momentKeyFor(unitId)
+            if key then
+                MomentService.play(key, {
+                    sourceActorId = evt.source,
+                    sourceModel = m,
+                    targetActorId = nil,
+                    targetModel = nil,
+                    position = m:GetPivot().Position,
+                })
+            end
         end
     end
 end

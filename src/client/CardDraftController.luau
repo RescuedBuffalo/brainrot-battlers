@@ -128,7 +128,17 @@ local function clearChildren(f: Instance)
     end
 end
 
-local function renderCards(options: { string }, kind: string)
+-- Phase 12 spec P0-3 + Appendix A: a card whose effect has a negative gold
+-- component must be disabled in the draft if the player can't afford it.
+-- Keeping this generic rather than hard-coding tung_tung_nap so future
+-- cards with gold costs slot in cleanly.
+local function canAfford(def, state): boolean
+    local cost = def.effect and def.effect.gold
+    if type(cost) ~= "number" or cost >= 0 then return true end
+    return (state.gold or 0) + cost >= 0
+end
+
+local function renderCards(options: { string }, kind: string, state: any)
     clearChildren(cardRow)
     draftTitle.Text = kind == "event" and "📜 Event — Pick 1" or "🔨 Forge — Pick 1 (run-long)"
 
@@ -200,10 +210,26 @@ local function renderCards(options: { string }, kind: string)
         end
 
         local chosen = def  -- capture
+        local affordable = canAfford(def, state or {})
+        if not affordable then
+            -- Dim the whole card + disable the click
+            card.BackgroundTransparency = 0.5
+            card.AutoButtonColor = false
+            card.Active = false
+            local tooltip = Instance.new("TextLabel")
+            tooltip.Size = UDim2.new(1, -16, 0, 16)
+            tooltip.Position = UDim2.fromOffset(8, 230)
+            tooltip.BackgroundTransparency = 1
+            tooltip.Text = "Not enough gold"
+            tooltip.TextColor3 = Color3.fromRGB(255, 120, 120)
+            tooltip.Font = Enum.Font.GothamBold
+            tooltip.TextScaled = true
+            tooltip.ZIndex = 21
+            tooltip.Parent = card
+        end
         card.MouseButton1Click:Connect(function()
+            if not affordable then return end
             if chosen.needsUnitTarget then
-                -- Two-step: send initial CardChoice, server switches phase
-                -- to unitTarget, then we show the target picker.
                 pendingCardId = chosen.id
                 remotes.CardChoice:FireServer({ cardId = chosen.id })
             else
@@ -326,7 +352,7 @@ function CardDraftController.Render(state: any)
         and state.pendingDraft and state.pendingDraft.options
 
     if showDraft then
-        renderCards(state.pendingDraft.options, state.pendingDraft.kind)
+        renderCards(state.pendingDraft.options, state.pendingDraft.kind, state)
         draftModal.Visible = true
     else
         draftModal.Visible = false

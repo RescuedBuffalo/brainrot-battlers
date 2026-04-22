@@ -32,11 +32,14 @@ export type Map = {
     layerCount: number,
 }
 
--- v1 shape: 7 layers total (1 fixed start combat, 5 mid-layers, 1 boss).
--- Middle widths chosen so total nodes = 10 (spec range 8-12). The 1-2-2-2-1
--- diamond silhouette gives a strong decision moment in the middle.
-local LAYER_COUNT = 7
-local MIDDLE_WIDTHS = { 1, 2, 2, 2, 1 }  -- 5 entries -> layers 2..6; 8 mid -> 10 total
+-- v1 shape: 6 layers total (1 fixed start combat, 4 mid-layers, 1 boss).
+-- Every middle layer has width >= 2 so every non-terminal node can have
+-- 2-3 outgoing edges per spec P0-1. The last middle layer's nodes all
+-- converge on the boss (1 edge each) -- pragmatic exception documented
+-- because STS-style maps require a single convergence point and a
+-- literal 2-3 read of the spec is mathematically impossible otherwise.
+local LAYER_COUNT = 6
+local MIDDLE_WIDTHS = { 2, 3, 3, 2 }  -- 4 entries -> layers 2..5; 10 mid -> 12 total
 
 -- Weighted pool for middle-layer node types. Keyed percentages sum to 100.
 -- Elite slots are reserved explicitly (one guaranteed somewhere in layers 5-7)
@@ -157,35 +160,57 @@ function RunMap.generate(seed: number): Map
             table.insert(layerIds, id)
         end
 
-        -- Wire edges from prev layer to this one. Each prev node connects to
-        -- 1-2 nodes in this layer, biased toward its own column so the map
-        -- stays planar. Every node in this layer must receive at least one
-        -- incoming edge.
-        local received = {}  -- set of this-layer ids that got an incoming edge
+        -- Wire edges from prev layer to this one. Per spec P0-1, every
+        -- non-terminal node has 2-3 outgoing edges. Strategy: always pick
+        -- the 2 closest-column candidates; add a 3rd 30% of the time when a
+        -- 3rd candidate exists. Keeps the map planar (no crossings) while
+        -- hitting the branching target.
+        local received = {}
         for _, prevId in ipairs(prevLayerIds) do
             local prev = nodes[prevId]
-            -- Map prev column into this layer's column range
             local prevCol = prev.column
+            -- Gather candidates within +-1 column for planarity. Widen to
+            -- +-2 if the +-1 set is too small (keeps us at 2+ choices even
+            -- on layer-width transitions).
             local choices = {}
             for col = 0, width - 1 do
                 if math.abs(col - prevCol) <= 1 then
                     table.insert(choices, layerIds[col + 1])
                 end
             end
+            if #choices < 2 then
+                for col = 0, width - 1 do
+                    if math.abs(col - prevCol) == 2 then
+                        table.insert(choices, layerIds[col + 1])
+                    end
+                end
+            end
             if #choices == 0 then
                 choices = { layerIds[math.min(width, math.max(1, prevCol + 1))] }
             end
+
+            -- Always add 2 edges when possible (the spec minimum).
             local pick1 = choices[rng(#choices)]
             table.insert(prev.nextNodeIds, pick1)
             received[pick1] = true
-            -- 50% chance of a second edge if there's another choice
-            if #choices > 1 and rng() < 0.5 then
+
+            if #choices >= 2 then
                 local others = {}
-                for _, c in ipairs(choices) do if c ~= pick1 then table.insert(others, c) end end
-                if #others > 0 then
-                    local pick2 = others[rng(#others)]
-                    table.insert(prev.nextNodeIds, pick2)
-                    received[pick2] = true
+                for _, c in ipairs(choices) do
+                    if c ~= pick1 then table.insert(others, c) end
+                end
+                local pick2 = others[rng(#others)]
+                table.insert(prev.nextNodeIds, pick2)
+                received[pick2] = true
+
+                -- 30% chance of a 3rd edge when a 3rd candidate exists.
+                if #others >= 2 and rng() < 0.3 then
+                    local pick3
+                    repeat
+                        pick3 = others[rng(#others)]
+                    until pick3 ~= pick2
+                    table.insert(prev.nextNodeIds, pick3)
+                    received[pick3] = true
                 end
             end
         end

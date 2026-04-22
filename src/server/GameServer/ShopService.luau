@@ -37,8 +37,20 @@ local function pool()
     return p
 end
 
+-- Effective bench cap -- normally Constants.BENCH_SIZE (9), but Phase 12
+-- cards can temporarily reduce it (e.g. espresso_spill: -1 bench slot for
+-- the next Combat's pre-combat shop). GameManager sets state.benchCapOverride
+-- on shop entry when the relevant card is active; ShopService honors it.
+local function effectiveBenchCap(state): number
+    local base = Constants.BENCH_SIZE
+    if type(state.benchCapOverride) == "number" then
+        return math.max(1, state.benchCapOverride)
+    end
+    return base
+end
+
 local function firstEmptyBench(state): number?
-    for i = 1, Constants.BENCH_SIZE do
+    for i = 1, effectiveBenchCap(state) do
         if state.bench[i] == nil then return i end
     end
     return nil
@@ -143,10 +155,15 @@ function ShopService.InitStandalone()
     LevelXP = require(sharedFolder:WaitForChild("LevelXP"))
 end
 
-function ShopService.RollShop(level: number)
+-- level: 1..8 base level determining ShopOdds table.
+-- costShift: optional integer added to each rolled cost tier (e.g. +1 for
+--   standalone Shop nodes per Phase 12 spec). Clamped to [1, 5] so the shift
+--   can never roll off either end of the pool.
+function ShopService.RollShop(level: number, costShift: number?)
     local p = pool()
     local lvl = math.clamp(level, 1, 8)
     local odds = ShopOdds[lvl]
+    local shift = costShift or 0
     local slots = {}
     for _ = 1, Constants.SHOP_SIZE do
         local roll = math.random(1, 100)
@@ -156,6 +173,7 @@ function ShopService.RollShop(level: number)
             acc += odds[cost]
             if roll <= acc then chosenCost = cost; break end
         end
+        chosenCost = math.clamp(chosenCost + shift, 1, 5)
         local tier = p[chosenCost]
         if tier and #tier > 0 then
             table.insert(slots, { unitId = tier[math.random(1, #tier)], sold = false })
@@ -235,9 +253,18 @@ function ShopService.Sell(state, source: string, index: number): boolean
 end
 
 function ShopService.Reroll(state): boolean
-    if state.gold < Constants.REROLL_COST then return false end
-    state.gold -= Constants.REROLL_COST
-    state.shop = ShopService.RollShop(state.level)
+    -- state.currentShopFreeReroll (set by GameManager on shop entry when
+    -- Skibidi Portal is active) waives the gold cost for the whole visit.
+    local free = state.currentShopFreeReroll == true
+    if not free and state.gold < Constants.REROLL_COST then return false end
+    if not free then
+        state.gold -= Constants.REROLL_COST
+    end
+    -- Pre-combat shops roll at base level; standalone shop nodes pass +1
+    -- tier shift from GameManager. Reroll keeps whatever shift the shop
+    -- was entered with (preserved in state.currentShopCostShift if set).
+    local shift = state.currentShopCostShift or 0
+    state.shop = ShopService.RollShop(state.level, shift)
     return true
 end
 
@@ -276,6 +303,7 @@ function ShopService.PlaceUnit(state, fromLoc: string, fromIdx: number, toLoc: s
             })
             return true
         elseif toLoc == "bench" then
+            if toIdx < 1 or toIdx > effectiveBenchCap(state) then return false end
             if state.bench[toIdx] == nil then
                 state.bench[toIdx] = unit
                 state.bench[fromIdx] = nil
@@ -288,6 +316,7 @@ function ShopService.PlaceUnit(state, fromLoc: string, fromIdx: number, toLoc: s
         local unit = state.board[fromIdx]
         if not unit then return false end
         if toLoc == "bench" then
+            if toIdx < 1 or toIdx > effectiveBenchCap(state) then return false end
             if state.bench[toIdx] ~= nil then return false end
             state.bench[toIdx] = { unitId = unit.unitId, star = unit.star, rarity = unit.rarity }
             table.remove(state.board, fromIdx)
@@ -317,6 +346,12 @@ end
 -- Mark ShopService as initialized (for debug/assertion).
 function ShopService.IsReady(): boolean
     return Constants ~= nil
+end
+
+-- Exposes the effective bench cap for other services / client UI that
+-- render or validate against it.
+function ShopService.GetBenchCap(state): number
+    return effectiveBenchCap(state)
 end
 
 return ShopService

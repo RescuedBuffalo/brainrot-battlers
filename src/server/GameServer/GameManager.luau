@@ -192,6 +192,8 @@ local function snapshotForClient(state: PlayerState)
         combatsWon = state.combatsWon,
         pendingDraft = state.pendingDraft,
         pendingTarget = state.pendingTarget,
+        benchCapOverride = state.benchCapOverride,
+        currentShopFreeReroll = state.currentShopFreeReroll,
     }
 end
 
@@ -360,6 +362,15 @@ local function runCombat(state: PlayerState)
         end
     end
 
+    -- End of shop visit (pre-combat branch). Skibidi Portal's freeReroll
+    -- half expires here even if never used; the +1 enemy half persists via
+    -- activeCards until combat actually begins (next-combat scope).
+    if state.currentShopFreeReroll then
+        CardService.ClearFreeRerollFlag(state)
+    end
+    state.currentShopFreeReroll = false
+    state.currentShopCostShift = 0
+
     state.phase = "combat"
     local enemyBoard, roundName = normalizeEnemyBoard(node.payload.enemyRound or 1)
 
@@ -396,6 +407,9 @@ local function runCombat(state: PlayerState)
 
     -- Next-combat-scope cards expire here
     CardService.ExpireNextCombatCards(state)
+    -- Espresso Spill's bench penalty is tied to the "next combat" shop
+    -- visit we just left; clear the override now that combat has consumed it.
+    state.benchCapOverride = nil
 
     if state.hp <= 0 then
         state.phase = "defeat"
@@ -420,15 +434,34 @@ local function enterNode(state: PlayerState, nodeId: string)
     if node.type == "combat" or node.type == "elite" or node.type == "boss" then
         -- Pre-combat shop phase using current level
         state.round = node.payload.enemyRound or state.round
-        state.shop = ShopService.RollShop(state.level)
+        state.currentShopCostShift = 0
+        state.currentShopFreeReroll = CardService.HasFreeRerollFlag(state)
+        -- Espresso Spill: -1 bench slot for the next Combat's pre-combat shop.
+        -- Bench slots that get "disabled" are the highest-index ones, so a
+        -- single unit occupying slot 9 doesn't get evicted.
+        local benchPenalty = 0
+        for _, c in ipairs(state.activeCards or {}) do
+            if c.id == "espresso_spill" and c.payload then
+                benchPenalty += (c.payload.benchPenalty or 0)
+            end
+        end
+        if benchPenalty > 0 then
+            state.benchCapOverride = math.max(1, Constants.BENCH_SIZE - benchPenalty)
+        else
+            state.benchCapOverride = nil
+        end
+        state.shop = ShopService.RollShop(state.level, 0)
         state.phase = "shop"
         UnitSpawner.ClearAll()
         syncShopVisuals(state)
     elseif node.type == "shop" then
         state.phase = "shopNode"
-        state.shop = ShopService.RollShop(state.level)
-        -- Skibidi Portal gives free reroll at the next shop encounter
-        CardService.ConsumeFreeReroll(state)
+        -- Spec P0-2: standalone Shop nodes roll with +1 rarity tier shift
+        -- compared to the pre-combat shop. Cost tier is clamped inside
+        -- ShopService so the player always sees 5 valid slots.
+        state.currentShopCostShift = 1
+        state.currentShopFreeReroll = CardService.HasFreeRerollFlag(state)
+        state.shop = ShopService.RollShop(state.level, 1)
     elseif node.type == "event" then
         state.phase = "eventDraft"
         -- Offer 2 of the 3 event cards
@@ -526,6 +559,14 @@ function GameManager.HandleContinue(player: Player)
     local state = states[player.UserId]
     if not state then return end
     if state.phase == "postcombat" or state.phase == "shopNode" then
+        -- End of shop visit (shopNode branch). The freeReroll half of
+        -- Skibidi Portal is consumed here whether it fired or not. The
+        -- +1 enemy half persists until actual combat runs.
+        if state.phase == "shopNode" and state.currentShopFreeReroll then
+            CardService.ClearFreeRerollFlag(state)
+        end
+        state.currentShopFreeReroll = false
+        state.currentShopCostShift = 0
         onNodeComplete(state)
         broadcast(player.UserId)
     end

@@ -1007,21 +1007,34 @@ local function renderShop(state: any)
 end
 
 local function renderBench(state: any)
+    -- Phase 12: state.benchCapOverride shrinks the usable bench (Espresso
+    -- Spill: -1 slot for the next pre-combat shop). Disabled slots render
+    -- dim + crossed-out so the player understands they can't be used.
+    local cap = state.benchCapOverride or Constants.BENCH_SIZE
     for i = 1, Constants.BENCH_SIZE do
         local slot = benchSlots[i]
         local unit = state.bench[i]
         local emoji = slot:FindFirstChild("Emoji") :: TextLabel
         local star = slot:FindFirstChild("Star") :: TextLabel
         local stroke = slot:FindFirstChildOfClass("UIStroke")
-        if unit then
+        local disabled = i > cap
+        if disabled then
+            emoji.Text = "🚫"
+            star.Text = ""
+            slot.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+            slot.BackgroundTransparency = 0.5
+            if stroke then stroke.Color = Color3.fromRGB(80, 40, 40); stroke.Thickness = 1 end
+        elseif unit then
             emoji.Text = emojiFor(unit.unitId)
             star.Text = starString(unit.star)
             slot.BackgroundColor3 = Color3.fromRGB(50, 55, 70)
+            slot.BackgroundTransparency = 0
             if stroke then stroke.Color = rarityColor(unit.rarity); stroke.Thickness = 3 end
         else
             emoji.Text = ""
             star.Text = ""
             slot.BackgroundColor3 = Color3.fromRGB(25, 28, 36)
+            slot.BackgroundTransparency = 0
             if stroke then stroke.Color = Color3.fromRGB(60, 60, 75); stroke.Thickness = 1 end
         end
     end

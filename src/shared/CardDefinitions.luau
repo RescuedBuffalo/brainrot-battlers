@@ -83,8 +83,11 @@ CardDefinitions.CARDS = {
         kind = "forge",
         name = "Tralalero Surge",
         emoji = "🦈",
-        desc = "When a Tralalero-trait unit casts, allied Italians gain 20 mana.",
-        effect = { kind = "trait_cast_mana_share", sourceTrait = "italian", allyTrait = "italian", amount = 20 },
+        desc = "When a Tralalero casts, allied Italian units gain 20 mana.",
+        -- sourceUnitId = specific unit, not trait. Per spec: "When any
+        -- Tralalero-trait unit casts". Since Tralalero is a specific unit
+        -- (not a trait), source is scoped to the unitId.
+        effect = { kind = "trait_cast_mana_share", sourceUnitId = "tralalero", allyTrait = "italian", amount = 20 },
         scope = "run",
     },
 }
