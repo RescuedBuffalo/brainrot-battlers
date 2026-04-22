@@ -95,4 +95,12 @@ for _, p in ipairs(Players:GetPlayers()) do
     GameManager.OnPlayerAdded(p)
 end
 
+-- Periodic autosave for mutated profiles + BindToClose shutdown flush.
+-- BindToClose blocks server shutdown for up to 30s; FlushAll parallelizes
+-- saves internally so we don't serialize against that budget.
+DataService.StartAutosave()
+game:BindToClose(function()
+    DataService.FlushAll()
+end)
+
 print("[GameServer] booted")
