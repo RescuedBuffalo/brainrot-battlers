@@ -27,7 +27,7 @@ ensureFolder(ReplicatedStorage, "UnitTemplates")
 local REMOTE_EVENTS = {
     "BuyUnit", "SellUnit", "PlaceUnit", "RerollShop",
     "BuyXP", "StartCombat", "NextRound", "OpenCrate",
-    "StateUpdate", "CombatEvent",
+    "StateUpdate", "CombatEvent", "CrateReveal",
 }
 for _, name in ipairs(REMOTE_EVENTS) do
     if not remotes:FindFirstChild(name) then

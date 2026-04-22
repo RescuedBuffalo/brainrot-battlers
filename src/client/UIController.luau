@@ -66,6 +66,12 @@ local postCombatIncome: TextLabel
 local nextRoundBtn: TextButton
 local endGameOverlay: Frame
 local endGameLabel: TextLabel
+local openCrateBtn: TextButton
+local crateBadge: TextLabel
+local collectionBtn: TextButton
+local crateModal: Frame
+local collectionModal: Frame
+local collectionGrid: Frame
 
 -- ---------- helpers ---------- --
 
@@ -565,6 +571,388 @@ end
 
 -- ---------- render ---------- --
 
+local function buildSideButtons(): (TextButton, TextButton)
+    -- Stacked below the sell button on the right edge.
+    local openBtn = Instance.new("TextButton")
+    openBtn.Name = "OpenCrateBtn"
+    openBtn.AnchorPoint = Vector2.new(1, 0)
+    openBtn.Position = UDim2.new(1, -10, 0, 100)
+    openBtn.Size = UDim2.fromOffset(120, 70)
+    openBtn.BackgroundColor3 = Color3.fromRGB(180, 110, 50)
+    openBtn.Text = "🎁 Open Crate"
+    openBtn.TextColor3 = Color3.new(1, 1, 1)
+    openBtn.Font = Enum.Font.GothamBold
+    openBtn.TextScaled = true
+    openBtn.BorderSizePixel = 0
+    openBtn.AutoButtonColor = true
+    makeCorner(openBtn, 8)
+    makePadding(openBtn, 6)
+    openBtn.MouseButton1Click:Connect(function()
+        remotes.OpenCrate:FireServer()
+    end)
+
+    -- Pending-count badge
+    crateBadge = Instance.new("TextLabel")
+    crateBadge.AnchorPoint = Vector2.new(1, 0)
+    crateBadge.Position = UDim2.new(1, 6, 0, -6)
+    crateBadge.Size = UDim2.fromOffset(28, 28)
+    crateBadge.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+    crateBadge.Text = "0"
+    crateBadge.TextColor3 = Color3.new(1, 1, 1)
+    crateBadge.Font = Enum.Font.GothamBlack
+    crateBadge.TextScaled = true
+    crateBadge.BorderSizePixel = 0
+    crateBadge.Visible = false
+    makeCorner(crateBadge, 14)
+    crateBadge.Parent = openBtn
+
+    local colBtn = Instance.new("TextButton")
+    colBtn.Name = "CollectionBtn"
+    colBtn.AnchorPoint = Vector2.new(1, 0)
+    colBtn.Position = UDim2.new(1, -10, 0, 180)
+    colBtn.Size = UDim2.fromOffset(120, 50)
+    colBtn.BackgroundColor3 = Color3.fromRGB(80, 100, 180)
+    colBtn.Text = "📚 Collection"
+    colBtn.TextColor3 = Color3.new(1, 1, 1)
+    colBtn.Font = Enum.Font.GothamBold
+    colBtn.TextScaled = true
+    colBtn.BorderSizePixel = 0
+    colBtn.AutoButtonColor = true
+    makeCorner(colBtn, 8)
+    makePadding(colBtn, 6)
+    colBtn.MouseButton1Click:Connect(function()
+        if collectionModal then
+            collectionModal.Visible = not collectionModal.Visible
+        end
+    end)
+
+    return openBtn, colBtn
+end
+
+local function buildCrateModal(): Frame
+    local m = Instance.new("Frame")
+    m.Name = "CrateModal"
+    m.AnchorPoint = Vector2.new(0.5, 0.5)
+    m.Position = UDim2.fromScale(0.5, 0.5)
+    m.Size = UDim2.new(1, 0, 1, 0)
+    m.BackgroundColor3 = Color3.new(0, 0, 0)
+    m.BackgroundTransparency = 0.4
+    m.BorderSizePixel = 0
+    m.Visible = false
+    m.ZIndex = 10
+
+    local card = Instance.new("Frame")
+    card.Name = "Card"
+    card.AnchorPoint = Vector2.new(0.5, 0.5)
+    card.Position = UDim2.fromScale(0.5, 0.5)
+    card.Size = UDim2.fromOffset(360, 460)
+    card.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+    card.BorderSizePixel = 0
+    card.ZIndex = 11
+    makeCorner(card, 12)
+    makeStroke(card, Color3.fromRGB(140, 140, 160), 3)
+    card.Parent = m
+
+    -- Contents: title, big emoji, rarity label, outcome text, close btn
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(1, 0, 0, 36)
+    title.Position = UDim2.fromOffset(0, 12)
+    title.BackgroundTransparency = 1
+    title.Text = "Opening..."
+    title.TextColor3 = Color3.fromRGB(255, 220, 120)
+    title.Font = Enum.Font.GothamBlack
+    title.TextScaled = true
+    title.ZIndex = 12
+    title.Parent = card
+
+    local emoji = Instance.new("TextLabel")
+    emoji.Name = "Emoji"
+    emoji.AnchorPoint = Vector2.new(0.5, 0.5)
+    emoji.Position = UDim2.fromScale(0.5, 0.42)
+    emoji.Size = UDim2.fromOffset(200, 200)
+    emoji.BackgroundTransparency = 1
+    emoji.Text = "🎁"
+    emoji.TextScaled = true
+    emoji.Font = Enum.Font.GothamBlack
+    emoji.TextColor3 = Color3.new(1, 1, 1)
+    emoji.ZIndex = 12
+    emoji.Parent = card
+
+    local rarityLabel = Instance.new("TextLabel")
+    rarityLabel.Name = "RarityLabel"
+    rarityLabel.Size = UDim2.new(1, -20, 0, 40)
+    rarityLabel.Position = UDim2.fromOffset(10, 300)
+    rarityLabel.BackgroundTransparency = 1
+    rarityLabel.Text = ""
+    rarityLabel.TextColor3 = Color3.new(1, 1, 1)
+    rarityLabel.Font = Enum.Font.GothamBold
+    rarityLabel.TextScaled = true
+    rarityLabel.ZIndex = 12
+    rarityLabel.Parent = card
+
+    local outcomeLabel = Instance.new("TextLabel")
+    outcomeLabel.Name = "OutcomeLabel"
+    outcomeLabel.Size = UDim2.new(1, -20, 0, 32)
+    outcomeLabel.Position = UDim2.fromOffset(10, 350)
+    outcomeLabel.BackgroundTransparency = 1
+    outcomeLabel.Text = ""
+    outcomeLabel.TextColor3 = Color3.fromRGB(200, 200, 220)
+    outcomeLabel.Font = Enum.Font.Gotham
+    outcomeLabel.TextScaled = true
+    outcomeLabel.ZIndex = 12
+    outcomeLabel.Parent = card
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Name = "CloseBtn"
+    closeBtn.AnchorPoint = Vector2.new(0.5, 1)
+    closeBtn.Position = UDim2.new(0.5, 0, 1, -14)
+    closeBtn.Size = UDim2.fromOffset(200, 40)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 180)
+    closeBtn.Text = "✓ Continue"
+    closeBtn.TextColor3 = Color3.new(1, 1, 1)
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextScaled = true
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Visible = false
+    closeBtn.ZIndex = 12
+    makeCorner(closeBtn, 8)
+    makePadding(closeBtn, 4)
+    closeBtn.MouseButton1Click:Connect(function()
+        m.Visible = false
+    end)
+    closeBtn.Parent = card
+
+    return m
+end
+
+local function buildCollectionModal(): Frame
+    local m = Instance.new("Frame")
+    m.Name = "CollectionModal"
+    m.AnchorPoint = Vector2.new(0.5, 0.5)
+    m.Position = UDim2.fromScale(0.5, 0.5)
+    m.Size = UDim2.new(1, 0, 1, 0)
+    m.BackgroundColor3 = Color3.new(0, 0, 0)
+    m.BackgroundTransparency = 0.4
+    m.BorderSizePixel = 0
+    m.Visible = false
+    m.ZIndex = 10
+
+    local card = Instance.new("Frame")
+    card.Name = "Card"
+    card.AnchorPoint = Vector2.new(0.5, 0.5)
+    card.Position = UDim2.fromScale(0.5, 0.5)
+    card.Size = UDim2.fromOffset(720, 520)
+    card.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+    card.BorderSizePixel = 0
+    card.ZIndex = 11
+    makeCorner(card, 12)
+    makeStroke(card, Color3.fromRGB(140, 140, 160), 2)
+    card.Parent = m
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.Position = UDim2.fromOffset(0, 10)
+    title.BackgroundTransparency = 1
+    title.Text = "📚 Collection"
+    title.TextColor3 = Color3.fromRGB(255, 220, 120)
+    title.Font = Enum.Font.GothamBlack
+    title.TextScaled = true
+    title.ZIndex = 12
+    title.Parent = card
+
+    collectionGrid = Instance.new("Frame")
+    collectionGrid.Name = "Grid"
+    collectionGrid.AnchorPoint = Vector2.new(0.5, 0)
+    collectionGrid.Position = UDim2.new(0.5, 0, 0, 60)
+    collectionGrid.Size = UDim2.new(1, -40, 1, -120)
+    collectionGrid.BackgroundTransparency = 1
+    collectionGrid.ZIndex = 12
+    collectionGrid.Parent = card
+
+    local layout = Instance.new("UIGridLayout")
+    layout.CellSize = UDim2.fromOffset(128, 140)
+    layout.CellPadding = UDim2.fromOffset(8, 8)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.Parent = collectionGrid
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.AnchorPoint = Vector2.new(0.5, 1)
+    closeBtn.Position = UDim2.new(0.5, 0, 1, -14)
+    closeBtn.Size = UDim2.fromOffset(200, 40)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 180)
+    closeBtn.Text = "Close"
+    closeBtn.TextColor3 = Color3.new(1, 1, 1)
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextScaled = true
+    closeBtn.BorderSizePixel = 0
+    closeBtn.ZIndex = 12
+    makeCorner(closeBtn, 8)
+    makePadding(closeBtn, 4)
+    closeBtn.MouseButton1Click:Connect(function()
+        m.Visible = false
+    end)
+    closeBtn.Parent = card
+
+    return m
+end
+
+local function renderCollection(state: any)
+    if not collectionGrid then return end
+    local coll = state.collection or {}
+    -- Stable alphabetical order
+    local sortedIds = {}
+    for uid in pairs(UnitDefinitions) do table.insert(sortedIds, uid) end
+    table.sort(sortedIds)
+
+    for _, uid in ipairs(sortedIds) do
+        local def = UnitDefinitions[uid]
+        local card = collectionGrid:FindFirstChild(uid)
+        if not card then
+            card = Instance.new("Frame")
+            card.Name = uid
+            card.BackgroundColor3 = Color3.fromRGB(35, 38, 50)
+            card.BorderSizePixel = 0
+            card.ZIndex = 12
+            makeCorner(card, 8)
+            makeStroke(card, Color3.fromRGB(90, 90, 110), 2)
+
+            local em = Instance.new("TextLabel")
+            em.Name = "Emoji"
+            em.Size = UDim2.new(1, 0, 0.6, 0)
+            em.BackgroundTransparency = 1
+            em.Text = def.emoji
+            em.TextScaled = true
+            em.Font = Enum.Font.GothamBold
+            em.TextColor3 = Color3.new(1, 1, 1)
+            em.ZIndex = 13
+            em.Parent = card
+
+            local nm = Instance.new("TextLabel")
+            nm.Name = "Name"
+            nm.Size = UDim2.new(1, 0, 0.2, 0)
+            nm.Position = UDim2.fromScale(0, 0.6)
+            nm.BackgroundTransparency = 1
+            nm.Text = def.name
+            nm.TextScaled = true
+            nm.Font = Enum.Font.GothamBold
+            nm.TextColor3 = Color3.new(1, 1, 1)
+            nm.ZIndex = 13
+            nm.Parent = card
+
+            local rLabel = Instance.new("TextLabel")
+            rLabel.Name = "Rarity"
+            rLabel.Size = UDim2.new(1, 0, 0.2, 0)
+            rLabel.Position = UDim2.fromScale(0, 0.8)
+            rLabel.BackgroundTransparency = 1
+            rLabel.Text = ""
+            rLabel.TextScaled = true
+            rLabel.Font = Enum.Font.GothamBold
+            rLabel.ZIndex = 13
+            rLabel.Parent = card
+
+            card.Parent = collectionGrid
+        end
+
+        local rarity = coll[uid]
+        local stroke = card:FindFirstChildOfClass("UIStroke")
+        local rLabel = card:FindFirstChild("Rarity") :: TextLabel
+        local emojiLbl = card:FindFirstChild("Emoji") :: TextLabel
+        if rarity then
+            local def2 = RarityDefinitions[rarity]
+            if def2 and stroke then
+                stroke.Color = def2.color
+                stroke.Thickness = 3
+            end
+            rLabel.Text = rarity:upper()
+            rLabel.TextColor3 = (def2 and def2.color) or Color3.new(1, 1, 1)
+            emojiLbl.TextTransparency = 0
+        else
+            if stroke then
+                stroke.Color = Color3.fromRGB(60, 60, 75)
+                stroke.Thickness = 1
+            end
+            rLabel.Text = "not owned"
+            rLabel.TextColor3 = Color3.fromRGB(130, 130, 140)
+            emojiLbl.TextTransparency = 0.7
+        end
+    end
+end
+
+local function animateCrateReveal(drop)
+    if not crateModal then return end
+    crateModal.Visible = true
+    local card = crateModal:FindFirstChild("Card") :: Frame
+    local title = card:FindFirstChild("Title") :: TextLabel
+    local emoji = card:FindFirstChild("Emoji") :: TextLabel
+    local rarityLbl = card:FindFirstChild("RarityLabel") :: TextLabel
+    local outcomeLbl = card:FindFirstChild("OutcomeLabel") :: TextLabel
+    local closeBtn = card:FindFirstChild("CloseBtn") :: TextButton
+
+    -- Reset state for each new reveal
+    title.Text = ("Opening %s crate..."):format(drop.tier or "common")
+    emoji.Text = "🎁"
+    rarityLbl.Text = ""
+    outcomeLbl.Text = ""
+    closeBtn.Visible = false
+    local stroke = card:FindFirstChildOfClass("UIStroke")
+    if stroke then stroke.Color = Color3.fromRGB(140, 140, 160) end
+
+    task.spawn(function()
+        -- Shake phase
+        local shakeDur = 1.2
+        local t0 = os.clock()
+        while os.clock() - t0 < shakeDur do
+            local a = (os.clock() - t0) / shakeDur
+            local angle = math.sin(a * 60) * (3 + a * 6)
+            emoji.Rotation = angle
+            task.wait()
+        end
+        emoji.Rotation = 0
+
+        -- Burst: scale pulse on the emoji background
+        local def = RarityDefinitions[drop.rarity]
+        local rColor = (def and def.color) or Color3.new(1, 1, 1)
+
+        -- Flash card outline with rarity color
+        if stroke then
+            stroke.Color = rColor
+            stroke.Thickness = 6
+        end
+
+        -- Reveal unit emoji
+        local unitDef = UnitDefinitions[drop.unitId]
+        if unitDef then
+            emoji.Text = unitDef.emoji
+        end
+
+        -- Optional burst particles on the attachment point of the card -- using
+        -- a simple tween scale instead since we're in GUI space.
+        local originalSize = emoji.Size
+        emoji.Size = UDim2.fromOffset(80, 80)
+        local tween = TweenService:Create(emoji, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = originalSize,
+        })
+        tween:Play()
+        task.wait(0.3)
+
+        title.Text = unitDef and unitDef.name or drop.unitId
+        rarityLbl.Text = (drop.rarity or "common"):upper() .. " " .. (unitDef and unitDef.emoji or "")
+        rarityLbl.TextColor3 = rColor
+
+        if drop.upgraded then
+            local prev = drop.previousRarity and drop.previousRarity:upper() or "NONE"
+            outcomeLbl.Text = ("✨ UPGRADED (%s → %s)"):format(prev, (drop.rarity or "?"):upper())
+            outcomeLbl.TextColor3 = Color3.fromRGB(255, 220, 120)
+        else
+            outcomeLbl.Text = ("Duplicate → +%d gold"):format(drop.goldRefund or 0)
+            outcomeLbl.TextColor3 = Color3.fromRGB(170, 200, 170)
+        end
+
+        closeBtn.Visible = true
+    end)
+end
+
 local function renderShop(state: any)
     for i = 1, Constants.SHOP_SIZE do
         local slot = shopSlots[i]
@@ -810,7 +1198,29 @@ function UIController.Init(deps)
     endGameOverlay = buildEndGameOverlay()
     endGameOverlay.Parent = screenGui
 
+    openCrateBtn, collectionBtn = buildSideButtons()
+    openCrateBtn.Parent = screenGui
+    collectionBtn.Parent = screenGui
+    crateModal = buildCrateModal()
+    crateModal.Parent = screenGui
+    collectionModal = buildCollectionModal()
+    collectionModal.Parent = screenGui
+
     UIController._updateSellVisual()
+end
+
+local function renderCrateButton(state: any)
+    if not crateBadge or not openCrateBtn then return end
+    local pending = #(state.pendingCrates or {})
+    if pending > 0 then
+        crateBadge.Text = tostring(pending)
+        crateBadge.Visible = true
+        openCrateBtn.BackgroundColor3 = Color3.fromRGB(220, 140, 60)
+        openCrateBtn.AutoButtonColor = true
+    else
+        crateBadge.Visible = false
+        openCrateBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+    end
 end
 
 function UIController.Render(state)
@@ -821,7 +1231,13 @@ function UIController.Render(state)
     renderBench(state)
     renderTraitPanel(state)
     renderOverlays(state)
+    renderCrateButton(state)
+    renderCollection(state)
     UIController._refreshSelectionOutline()
+end
+
+function UIController.ShowCrateReveal(drop)
+    animateCrateReveal(drop)
 end
 
 -- Called by Input when the user clicks a tile. x,y are 0..5 tile coords.
