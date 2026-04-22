@@ -344,13 +344,23 @@ function GameManager.HandleOpenCrate(player: Player)
     if not state then return end
     if #state.pendingCrates == 0 then return end
     local tier = table.remove(state.pendingCrates, 1)
-    if CrateService and CrateService.Open then
-        local drop = CrateService.Open(player.UserId, tier)
-        if drop then
-            state.collection = DataService.Load(player.UserId).collection
-            if drop.goldRefund and drop.goldRefund > 0 then
-                state.gold += drop.goldRefund
-            end
+    if not (CrateService and CrateService.Open) then
+        broadcast(player.UserId)
+        return
+    end
+
+    local drop = CrateService.Open(player.UserId, tier)
+    if drop then
+        -- Refresh collection reference (DataService mutates in place; the
+        -- snapshot copy here is safer for future DataStore wrapper).
+        state.collection = DataService.Load(player.UserId).collection
+        if drop.goldRefund and drop.goldRefund > 0 then
+            state.gold += drop.goldRefund
+        end
+        -- Fire reveal event so the client can animate the opening before we
+        -- broadcast the post-reveal state.
+        if Remotes.CrateReveal then
+            Remotes.CrateReveal:FireClient(player, drop)
         end
     end
     broadcast(player.UserId)

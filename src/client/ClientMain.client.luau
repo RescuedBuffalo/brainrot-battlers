@@ -13,6 +13,7 @@ local Input           = require(parentScripts:WaitForChild("Input"))
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local stateUpdate  = remotes:WaitForChild("StateUpdate")
 local combatEvent  = remotes:WaitForChild("CombatEvent")
+local crateReveal  = remotes:WaitForChild("CrateReveal")
 
 local deps = {
     Remotes = remotes,
@@ -31,6 +32,10 @@ end)
 
 combatEvent.OnClientEvent:Connect(function(events)
     CombatRenderer.PlayEvents(events)
+end)
+
+crateReveal.OnClientEvent:Connect(function(drop)
+    UIController.ShowCrateReveal(drop)
 end)
 
 print("[Client] booted")
