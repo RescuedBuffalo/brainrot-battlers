@@ -19,6 +19,7 @@ local EnemyRounds
 local ShopService
 local CombatEngine
 local CrateService
+local LobbyService
 local DataService
 local UnitSpawner
 local Remotes
@@ -362,6 +363,10 @@ function GameManager.HandleOpenCrate(player: Player)
         if Remotes.CrateReveal then
             Remotes.CrateReveal:FireClient(player, drop)
         end
+        -- Refresh lobby pedestal display with new collection
+        if LobbyService and drop.upgraded then
+            LobbyService.RefreshPedestals(state.collection)
+        end
     end
     broadcast(player.UserId)
 end
@@ -376,6 +381,7 @@ function GameManager.Init(deps)
     ShopService = deps.ShopService
     CombatEngine = deps.CombatEngine
     CrateService = deps.CrateService
+    LobbyService = deps.LobbyService
     DataService = deps.DataService
     UnitSpawner = deps.UnitSpawner
     Remotes = deps.Remotes
@@ -385,10 +391,38 @@ function GameManager.GetState(userId: number)
     return states[userId]
 end
 
+-- Teleport the player's character to the lobby spawn. Called on join and
+-- on every respawn so players always re-enter through the lobby.
+local function warpToLobby(player: Player)
+    local lobby = workspace:FindFirstChild("LobbyHub")
+    if not lobby then return end
+    local spawn = lobby:FindFirstChild("LobbySpawn")
+    if not spawn or not spawn:IsA("BasePart") then return end
+    local character = player.Character
+    if not character then return end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    -- Slightly above the pad so the character doesn't clip through
+    character:PivotTo(CFrame.new(spawn.Position + Vector3.new(0, 4, 0)))
+end
+
 function GameManager.OnPlayerAdded(player: Player)
     local state = newState(player.UserId)
     states[player.UserId] = state
+    if LobbyService then
+        LobbyService.RefreshPedestals(state.collection)
+    end
     broadcast(player.UserId)
+
+    -- Warp on current + future respawns
+    if player.Character then
+        warpToLobby(player)
+    end
+    player.CharacterAdded:Connect(function()
+        -- Tiny delay so the humanoid is fully set up before we move the rig.
+        task.wait(0.15)
+        warpToLobby(player)
+    end)
 end
 
 function GameManager.OnPlayerRemoving(player: Player)

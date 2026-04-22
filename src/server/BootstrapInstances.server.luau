@@ -51,6 +51,131 @@ if not lobby then
     lobby.Parent = Workspace
 end
 
+-- Lobby geometry: elevated platform with 10 pedestals arranged in an arc
+-- facing a glowing portal. SpawnLocation sits at the arc's center so the
+-- player joins inside the lobby and can walk through the portal.
+-- Offset from the arena (which lives at origin) by 80 studs along -X.
+local LOBBY_CENTER_X = -80
+local LOBBY_CENTER_Z = 0
+local LOBBY_Y = 40  -- platform top
+local PEDESTAL_COUNT = 10
+local PEDESTAL_ARC_RADIUS = 24
+local PEDESTAL_ARC_DEG = 160
+
+if #lobby:GetChildren() < 4 then
+    -- Wipe any stale children so the rebuild is deterministic
+    for _, c in ipairs(lobby:GetChildren()) do c:Destroy() end
+
+    local platform = Instance.new("Part")
+    platform.Name = "Platform"
+    platform.Anchored = true
+    platform.Size = Vector3.new(64, 1, 64)
+    platform.Position = Vector3.new(LOBBY_CENTER_X, LOBBY_Y, LOBBY_CENTER_Z)
+    platform.Material = Enum.Material.Marble
+    platform.Color = Color3.fromRGB(55, 45, 90)
+    platform.TopSurface = Enum.SurfaceType.Smooth
+    platform.BottomSurface = Enum.SurfaceType.Smooth
+    platform.Parent = lobby
+
+    -- Decorative rim
+    local rim = Instance.new("Part")
+    rim.Name = "Rim"
+    rim.Anchored = true
+    rim.CanCollide = false
+    rim.Size = Vector3.new(66, 0.4, 66)
+    rim.Position = Vector3.new(LOBBY_CENTER_X, LOBBY_Y + 0.5, LOBBY_CENTER_Z)
+    rim.Material = Enum.Material.Neon
+    rim.Color = Color3.fromRGB(180, 100, 220)
+    rim.Transparency = 0.4
+    rim.TopSurface = Enum.SurfaceType.Smooth
+    rim.Parent = lobby
+
+    local pedestals = ensureFolder(lobby, "Pedestals")
+    local platformTop = LOBBY_Y + 0.5
+
+    local UNIT_IDS = {
+        "skibidi", "sigma", "gyatt", "tralalero", "bombardiro",
+        "tungtung", "ballerina", "capuchino", "fanum", "ohio",
+    }
+    -- Arc centered on -Z (facing the portal). Sweep ARC_DEG degrees from
+    -- left to right so the pedestals form a semicircle opening toward the
+    -- portal.
+    local halfSweep = math.rad(PEDESTAL_ARC_DEG / 2)
+    for i, unitId in ipairs(UNIT_IDS) do
+        local t = (i - 1) / (PEDESTAL_COUNT - 1)
+        local theta = -halfSweep + t * (2 * halfSweep)
+        -- Offset the arc center so it opens toward +Z (portal is at +Z)
+        local x = LOBBY_CENTER_X + math.sin(theta) * PEDESTAL_ARC_RADIUS
+        local z = LOBBY_CENTER_Z - math.cos(theta) * PEDESTAL_ARC_RADIUS
+
+        local pedestal = Instance.new("Part")
+        pedestal.Name = "Pedestal_" .. unitId
+        pedestal.Anchored = true
+        pedestal.CanCollide = true
+        pedestal.Shape = Enum.PartType.Cylinder
+        -- Cylinder primitive has its length on the X axis; rotate to stand up.
+        pedestal.Size = Vector3.new(4, 3.6, 3.6)
+        pedestal.CFrame = CFrame.new(x, platformTop + 1.8, z) * CFrame.Angles(0, 0, math.rad(90))
+        pedestal.Material = Enum.Material.Marble
+        pedestal.Color = Color3.fromRGB(70, 55, 100)
+        pedestal.TopSurface = Enum.SurfaceType.Smooth
+        pedestal.BottomSurface = Enum.SurfaceType.Smooth
+        pedestal:SetAttribute("UnitId", unitId)
+        pedestal.Parent = pedestals
+    end
+
+    -- Portal: a tall, glowing pink slab with a PointLight. Kids love flex.
+    local portal = Instance.new("Part")
+    portal.Name = "Portal"
+    portal.Anchored = true
+    portal.CanCollide = false
+    portal.Size = Vector3.new(10, 14, 1.5)
+    portal.Position = Vector3.new(LOBBY_CENTER_X, LOBBY_Y + 7.5, LOBBY_CENTER_Z + 16)
+    portal.Material = Enum.Material.Neon
+    portal.Color = Color3.fromRGB(255, 90, 200)
+    portal.Transparency = 0.2
+    portal.TopSurface = Enum.SurfaceType.Smooth
+    portal.BottomSurface = Enum.SurfaceType.Smooth
+    portal.Parent = lobby
+    local portalLight = Instance.new("PointLight")
+    portalLight.Color = portal.Color
+    portalLight.Range = 40
+    portalLight.Brightness = 3
+    portalLight.Parent = portal
+
+    local portalLabel = Instance.new("BillboardGui")
+    portalLabel.Size = UDim2.fromOffset(240, 60)
+    portalLabel.StudsOffsetWorldSpace = Vector3.new(0, 9, 0)
+    portalLabel.AlwaysOnTop = true
+    portalLabel.Parent = portal
+    local portalText = Instance.new("TextLabel")
+    portalText.Size = UDim2.fromScale(1, 1)
+    portalText.BackgroundTransparency = 1
+    portalText.Text = "⚔️ PLAY"
+    portalText.TextColor3 = Color3.fromRGB(255, 220, 255)
+    portalText.Font = Enum.Font.GothamBlack
+    portalText.TextScaled = true
+    portalText.TextStrokeColor3 = Color3.new(0, 0, 0)
+    portalText.TextStrokeTransparency = 0
+    portalText.Parent = portalLabel
+
+    -- SpawnLocation near the arc center, facing the portal
+    local spawn = Instance.new("SpawnLocation")
+    spawn.Name = "LobbySpawn"
+    spawn.Anchored = true
+    spawn.CanCollide = true
+    spawn.Size = Vector3.new(8, 1, 8)
+    spawn.Position = Vector3.new(LOBBY_CENTER_X, LOBBY_Y + 1, LOBBY_CENTER_Z - 2)
+    spawn.Color = Color3.fromRGB(255, 150, 230)
+    spawn.Material = Enum.Material.Neon
+    spawn.Transparency = 0.2
+    spawn.TopSurface = Enum.SurfaceType.Smooth
+    spawn.BottomSurface = Enum.SurfaceType.Smooth
+    spawn.Neutral = true
+    spawn.AllowTeamChangeOnTouch = false
+    spawn.Parent = lobby
+end
+
 local arena = Workspace:FindFirstChild("BattleArena")
 if not arena then
     arena = Instance.new("Model")
