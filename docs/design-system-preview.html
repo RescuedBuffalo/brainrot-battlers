@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Brainrot Autobattler — Design System Preview v0.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Montserrat:wght@500;700;900&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Brand */
+    --brand-cookedRed: #FF3B47;
+    --brand-skibidiCyan: #00E0FF;
+    --brand-gyattYellow: #FFD23A;
+    --brand-sigmaPurple: #A445FF;
+    --brand-brainrotLime: #B6FF3C;
+
+    /* Rarity */
+    --rarity-common: #A8AEBF;
+    --rarity-uncommon: #42D17B;
+    --rarity-rare: #3D8BFF;
+    --rarity-epic: #B56AFF;
+    --rarity-legendary: #FFB84A;
+
+    /* Semantic */
+    --semantic-success: #42D17B;
+    --semantic-warning: #FFB84A;
+    --semantic-danger: #FF3B47;
+    --semantic-info: #00E0FF;
+
+    /* Ink scale */
+    --ink-900: #0B0D14;
+    --ink-800: #151925;
+    --ink-700: #1E2333;
+    --ink-600: #2A3148;
+    --ink-500: #3A4156;
+    --ink-400: #5B6279;
+    --ink-300: #8A91A8;
+    --ink-200: #B8BED0;
+    --ink-100: #D6DAE6;
+    --paper-000: #F5F6FA;
+    --overlay-scrim: rgba(11,13,20,0.72);
+
+    /* Spacing */
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
+    --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px; --s16: 64px; --s20: 80px;
+
+    /* Radius */
+    --r-sm: 4px; --r-md: 8px; --r-lg: 12px; --r-xl: 20px; --r-full: 9999px;
+
+    /* Motion */
+    --m-fast: 120ms; --m-base: 200ms; --m-slow: 320ms;
+    --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+    --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-elastic: cubic-bezier(.68,-0.55,.27,1.55);
+
+    --ff-display: "Luckiest Guy", Impact, sans-serif;
+    --ff-head: "Montserrat", system-ui, sans-serif;
+    --ff-body: "Montserrat", system-ui, sans-serif;
+    --ff-num: "Roboto Mono", ui-monospace, monospace;
+
+    --stroke-sticker: 2px solid rgba(11,13,20,0.8);
+    --stroke-sticker-heavy: 3px solid rgba(11,13,20,0.9);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--ink-900); color: var(--ink-100); font-family: var(--ff-body); font-weight: 500; -webkit-font-smoothing: antialiased; }
+  a { color: var(--brand-skibidiCyan); }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: var(--s10) var(--s6) var(--s20); }
+
+  /* Hero */
+  .hero {
+    padding: var(--s12) var(--s8);
+    border-radius: var(--r-xl);
+    background:
+      radial-gradient(800px 300px at 20% 0%, rgba(255,59,71,0.18), transparent 60%),
+      radial-gradient(700px 320px at 80% 100%, rgba(164,69,255,0.22), transparent 60%),
+      linear-gradient(180deg, var(--ink-800), var(--ink-900));
+    border: var(--stroke-sticker);
+    margin-bottom: var(--s10);
+  }
+  .hero-kicker { font-family: var(--ff-head); font-weight: 900; color: var(--brand-skibidiCyan); text-transform: uppercase; letter-spacing: 2px; font-size: 12px; margin-bottom: var(--s3); }
+  .hero-title { font-family: var(--ff-display); font-size: 72px; line-height: 1; margin: 0; text-transform: uppercase; -webkit-text-stroke: 3px var(--ink-900); letter-spacing: 1px; }
+  .hero-title .col1 { color: var(--brand-cookedRed); }
+  .hero-title .col2 { color: var(--brand-gyattYellow); }
+  .hero-title .col3 { color: var(--brand-skibidiCyan); }
+  .hero-sub { font-size: 18px; color: var(--ink-200); max-width: 720px; margin-top: var(--s5); line-height: 1.5; }
+
+  /* Section */
+  section { margin-top: var(--s12); }
+  h2.section-title { font-family: var(--ff-head); font-weight: 900; font-size: 32px; margin: 0 0 var(--s2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .section-sub { color: var(--ink-300); margin: 0 0 var(--s6); }
+
+  /* Palette */
+  .grid { display: grid; gap: var(--s4); }
+  .grid-brand  { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .grid-ink    { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .swatch { border-radius: var(--r-lg); overflow: hidden; border: var(--stroke-sticker); background: var(--ink-800); }
+  .swatch .color { aspect-ratio: 16 / 9; }
+  .swatch .meta { padding: var(--s3) var(--s4); }
+  .swatch .name { font-family: var(--ff-head); font-weight: 700; font-size: 14px; }
+  .swatch .hex { font-family: var(--ff-num); color: var(--ink-300); font-size: 12px; margin-top: 2px; }
+
+  /* Rarity row */
+  .rarity-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s4); }
+  .rarity-card { padding: var(--s5); border-radius: var(--r-lg); background: var(--ink-800); border: var(--stroke-sticker); text-align: center; }
+  .rarity-card .glyph { font-size: 48px; line-height: 1; margin-bottom: var(--s2); }
+  .rarity-card .label { font-family: var(--ff-head); font-weight: 900; text-transform: uppercase; letter-spacing: 1px; font-size: 14px; }
+  .rarity-card .hex { font-family: var(--ff-num); color: var(--ink-300); font-size: 11px; margin-top: 2px; }
+
+  /* Type scale */
+  .type-row { display: grid; grid-template-columns: 180px 1fr; gap: var(--s4); align-items: baseline; padding: var(--s3) 0; border-bottom: 1px solid var(--ink-700); }
+  .type-token { font-family: var(--ff-num); color: var(--ink-300); font-size: 12px; }
+  .t-display-xl { font-family: var(--ff-display); font-size: 72px; line-height: 78px; -webkit-text-stroke: 2px var(--ink-900); text-transform: uppercase; }
+  .t-display-lg { font-family: var(--ff-display); font-size: 48px; line-height: 54px; -webkit-text-stroke: 2px var(--ink-900); text-transform: uppercase; }
+  .t-h1 { font-family: var(--ff-head); font-weight: 900; font-size: 32px; line-height: 38px; }
+  .t-h2 { font-family: var(--ff-head); font-weight: 900; font-size: 24px; line-height: 30px; }
+  .t-h3 { font-family: var(--ff-head); font-weight: 700; font-size: 20px; line-height: 26px; }
+  .t-body-lg { font-family: var(--ff-body); font-weight: 500; font-size: 16px; line-height: 24px; }
+  .t-body-md { font-family: var(--ff-body); font-weight: 500; font-size: 14px; line-height: 20px; }
+  .t-caption { font-family: var(--ff-body); font-weight: 500; font-size: 12px; line-height: 16px; }
+  .t-num-lg  { font-family: var(--ff-num); font-weight: 700; font-size: 24px; line-height: 28px; }
+
+  /* Buttons */
+  .btn-row { display: flex; flex-wrap: wrap; gap: var(--s4); align-items: center; }
+  .btn {
+    font-family: var(--ff-head); font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+    border: var(--stroke-sticker); border-radius: var(--r-md); cursor: pointer;
+    padding: 12px 20px; font-size: 14px; color: white;
+    transition: transform var(--m-fast) var(--ease-back), filter var(--m-fast) var(--ease-out);
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-1px) scale(1.02); filter: brightness(1.08); }
+  .btn:active:not(:disabled) { transform: scale(0.98); filter: brightness(0.92); }
+  .btn:focus-visible { outline: 3px solid var(--brand-skibidiCyan); outline-offset: 2px; }
+  .btn-primary { background: var(--brand-cookedRed); }
+  .btn-secondary { background: var(--ink-600); color: var(--ink-100); }
+  .btn-ghost { background: transparent; border: 2px solid var(--ink-500); color: var(--ink-100); }
+  .btn-destructive { background: #7a1420; }
+  .btn-sm { padding: 8px 12px; font-size: 12px; }
+  .btn-lg { padding: 16px 24px; font-size: 18px; }
+  .btn-mega { font-family: var(--ff-display); font-size: 32px; padding: 18px 36px; border: var(--stroke-sticker-heavy); -webkit-text-stroke: 2px var(--ink-900); }
+  .btn:disabled { background: var(--ink-500); color: var(--ink-300); border-color: transparent; cursor: not-allowed; filter: none; transform: none; }
+
+  /* Unit card */
+  .unit-card {
+    width: 220px; background: var(--ink-800); border-radius: var(--r-lg);
+    border: var(--stroke-sticker); overflow: hidden; position: relative;
+  }
+  .unit-card .portrait { aspect-ratio: 1 / 1; background: linear-gradient(135deg, #4a2f7a, #1a4a7a); display: flex; align-items: center; justify-content: center; font-size: 72px; }
+  .unit-card .cost { position: absolute; top: var(--s2); left: var(--s2); background: var(--brand-gyattYellow); color: var(--ink-900); font-family: var(--ff-num); font-weight: 700; font-size: 14px; padding: 2px 8px; border-radius: var(--r-sm); border: var(--stroke-sticker); }
+  .unit-card .stars { position: absolute; top: 68%; left: 50%; transform: translateX(-50%); background: var(--ink-900); padding: 2px 6px; border-radius: var(--r-full); border: var(--stroke-sticker); color: var(--brand-gyattYellow); font-size: 14px; letter-spacing: 2px; }
+  .unit-card .body { padding: var(--s3) var(--s4) var(--s4); }
+  .unit-card .name { font-family: var(--ff-head); font-weight: 900; font-size: 16px; text-transform: uppercase; }
+  .unit-card .traits { display: flex; gap: var(--s1); margin-top: var(--s2); flex-wrap: wrap; }
+  .trait-chip { font-family: var(--ff-head); font-weight: 700; text-transform: uppercase; font-size: 10px; padding: 2px 8px; border-radius: var(--r-full); background: var(--ink-700); letter-spacing: 0.5px; border: 1px solid var(--ink-600); }
+  .rarity-epic   .unit-card, .unit-card.rarity-epic   { box-shadow: inset 0 0 0 3px var(--rarity-epic); }
+  .rarity-rare   .unit-card, .unit-card.rarity-rare   { box-shadow: inset 0 0 0 3px var(--rarity-rare); }
+  .rarity-legendary .unit-card, .unit-card.rarity-legendary { box-shadow: inset 0 0 0 3px var(--rarity-legendary); }
+
+  /* Shop row */
+  .shop { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--s3); padding: var(--s4); background: var(--ink-800); border: var(--stroke-sticker); border-radius: var(--r-lg); }
+  .shop-slot { aspect-ratio: 3 / 4; border-radius: var(--r-md); background: var(--ink-700); position: relative; overflow: hidden; border: var(--stroke-sticker); }
+  .shop-slot .s-port { position: absolute; inset: 0; background: linear-gradient(135deg, #2a3a6a, #0a1a3a); display: flex; align-items: center; justify-content: center; font-size: 48px; }
+  .shop-slot .s-cost { position: absolute; top: 4px; left: 4px; background: var(--brand-gyattYellow); color: var(--ink-900); font-family: var(--ff-num); font-weight: 700; font-size: 11px; padding: 1px 6px; border-radius: var(--r-sm); border: 1px solid var(--ink-900); }
+  .shop-slot .s-name { position: absolute; bottom: 0; left: 0; right: 0; padding: 4px 6px; background: rgba(11,13,20,0.85); font-family: var(--ff-head); font-weight: 700; font-size: 11px; text-transform: uppercase; text-align: center; }
+  .shop-slot.rarity-common    { outline: 2px solid var(--rarity-common);    outline-offset: -4px; }
+  .shop-slot.rarity-uncommon  { outline: 2px solid var(--rarity-uncommon);  outline-offset: -4px; }
+  .shop-slot.rarity-rare      { outline: 2px solid var(--rarity-rare);      outline-offset: -4px; }
+  .shop-slot.rarity-epic      { outline: 2px solid var(--rarity-epic);      outline-offset: -4px; }
+  .shop-slot.rarity-legendary { outline: 2px solid var(--rarity-legendary); outline-offset: -4px; }
+  .shop-slot.locked { outline: 3px double var(--brand-skibidiCyan); outline-offset: -5px; }
+  .shop-slot.locked::after { content: "🔒"; position: absolute; bottom: 22px; right: 6px; font-size: 18px; }
+
+  /* HUD bars */
+  .bar { height: 10px; background: var(--ink-700); border-radius: var(--r-full); overflow: hidden; border: 1px solid var(--ink-600); }
+  .bar .fill { height: 100%; }
+  .bar-hp .fill { background: var(--semantic-success); width: 72%; }
+  .bar-mana .fill { background: var(--brand-skibidiCyan); width: 48%; }
+  .bar-xp .fill { background: var(--brand-sigmaPurple); width: 35%; }
+  .bar-timer .fill { background: var(--brand-gyattYellow); width: 60%; }
+  .bar-hp-enemy .fill { background: repeating-linear-gradient(-45deg, var(--semantic-danger) 0 6px, #8a1820 6px 12px); width: 60%; }
+
+  /* Currency */
+  .currency { display: inline-flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s3); background: var(--ink-800); border: var(--stroke-sticker); border-radius: var(--r-full); }
+  .currency .coin { width: 20px; height: 20px; border-radius: var(--r-full); background: var(--brand-gyattYellow); border: var(--stroke-sticker); display: inline-block; }
+  .currency .n { font-family: var(--ff-num); font-weight: 700; font-size: 20px; }
+
+  /* Trait badge */
+  .trait-badge { display: inline-flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s3); background: var(--ink-700); border: var(--stroke-sticker); border-radius: var(--r-md); font-family: var(--ff-head); font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+  .trait-badge .hex { width: 18px; height: 18px; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+  .trait-badge .count { font-family: var(--ff-num); color: var(--ink-300); margin-left: var(--s1); }
+  .tier-bronze .hex { background: #b87333; }
+  .tier-silver .hex { background: #c0c0c0; }
+  .tier-gold   .hex { background: var(--brand-gyattYellow); }
+  .tier-chromatic .hex { background: linear-gradient(45deg, var(--brand-cookedRed), var(--brand-gyattYellow), var(--brand-skibidiCyan), var(--brand-sigmaPurple)); }
+
+  /* Tooltip demo */
+  .tooltip { display: inline-block; max-width: 320px; background: var(--ink-700); border: var(--stroke-sticker); border-radius: var(--r-md); padding: var(--s3) var(--s4); box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+  .tooltip h4 { font-family: var(--ff-head); margin: 0 0 var(--s1); font-size: 16px; text-transform: uppercase; }
+  .tooltip p { margin: 0; font-size: 13px; color: var(--ink-200); line-height: 1.4; }
+
+  /* Toast */
+  .toast { display: inline-flex; align-items: center; gap: var(--s3); background: var(--ink-700); border: var(--stroke-sticker); border-left: 4px solid var(--semantic-success); border-radius: var(--r-md); padding: var(--s3) var(--s4); }
+  .toast .ico { color: var(--semantic-success); font-weight: 900; }
+
+  /* Reward burst */
+  .reward { position: relative; width: 360px; aspect-ratio: 1 / 1; background: radial-gradient(circle at 50% 50%, rgba(255,184,74,0.35), transparent 60%), var(--ink-900); border-radius: var(--r-xl); border: var(--stroke-sticker); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .reward .word { font-family: var(--ff-display); font-size: 72px; color: var(--brand-gyattYellow); -webkit-text-stroke: 3px var(--ink-900); text-transform: uppercase; }
+  .reward .emoji { position: absolute; font-size: 42px; }
+  .reward .e1 { top: 16%; left: 14%; }
+  .reward .e2 { bottom: 18%; right: 10%; }
+  .reward .e3 { top: 20%; right: 16%; }
+
+  /* Layout cards */
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s6); }
+  .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s4); }
+  @media (max-width: 860px) { .row2, .row3 { grid-template-columns: 1fr; } }
+
+  /* Screen mocks (ASCII-ish layout blocks) */
+  .mock { background: var(--ink-800); border: var(--stroke-sticker); border-radius: var(--r-lg); padding: var(--s4); aspect-ratio: 16 / 9; display: grid; gap: var(--s2); }
+  .mock .zone { background: var(--ink-700); border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-family: var(--ff-head); font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--ink-300); padding: var(--s2); text-align: center; }
+  .mock-match { grid-template-columns: 80px 1fr 80px; grid-template-rows: 40px 1fr 60px; grid-template-areas: "topL topC topR" "left  board right" "botL  shop  botR"; }
+  .mock-match .z-topL  { grid-area: topL; }
+  .mock-match .z-topC  { grid-area: topC; background: linear-gradient(90deg, var(--brand-gyattYellow), var(--brand-cookedRed)); color: var(--ink-900); }
+  .mock-match .z-topR  { grid-area: topR; }
+  .mock-match .z-left  { grid-area: left; }
+  .mock-match .z-board { grid-area: board; background: radial-gradient(circle at 50% 50%, #2a6a4a, #0a3a2a); color: var(--ink-100); font-size: 14px; }
+  .mock-match .z-right { grid-area: right; }
+  .mock-match .z-botL  { grid-area: botL; }
+  .mock-match .z-shop  { grid-area: shop; background: var(--ink-600); }
+  .mock-match .z-botR  { grid-area: botR; }
+  .mock-menu { grid-template-rows: 60px 1fr 60px; }
+  .mock-menu .z-hero { background: linear-gradient(135deg, #3a1a5a, #5a1a3a); color: var(--brand-gyattYellow); font-size: 18px; }
+  .mock-ftue { grid-template-columns: 1fr; position: relative; }
+  .mock-ftue .z-bg { background: linear-gradient(180deg, #1a2a4a, #0a1a2a); aspect-ratio: unset; }
+  .mock-ftue .spot { position: absolute; width: 40%; height: 40%; left: 40%; top: 30%; border-radius: var(--r-full); box-shadow: 0 0 0 9999px var(--overlay-scrim); border: 2px dashed var(--brand-gyattYellow); }
+  .mock-ftue .coach { position: absolute; right: 8%; top: 12%; background: var(--ink-700); border: var(--stroke-sticker); border-radius: var(--r-md); padding: var(--s3); font-size: 11px; max-width: 40%; color: var(--ink-100); }
+
+  /* Dont/Do callouts */
+  .do-dont { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
+  .do-dont .card { padding: var(--s4); border-radius: var(--r-lg); border: var(--stroke-sticker); background: var(--ink-800); }
+  .do-dont .card h4 { margin: 0 0 var(--s2); font-family: var(--ff-head); font-weight: 900; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; }
+  .do-dont .do h4 { color: var(--semantic-success); }
+  .do-dont .dont h4 { color: var(--semantic-danger); }
+  .do-dont ul { margin: 0; padding-left: var(--s5); color: var(--ink-200); font-size: 14px; line-height: 1.5; }
+
+  .foot { margin-top: var(--s16); padding-top: var(--s6); border-top: 1px solid var(--ink-700); color: var(--ink-300); font-size: 13px; }
+  .foot a { color: var(--brand-skibidiCyan); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="hero-kicker">Design System · v0.1 · 2026-04-20</div>
+    <h1 class="hero-title"><span class="col1">BRAIN</span><span class="col2">ROT</span> <span class="col3">SYSTEM</span></h1>
+    <p class="hero-sub">Roster screams, chrome whispers. A foundational system for a TFT-style Roblox autobattler with an Italian-brainrot character roster. Saturated primaries, sticker outlines, one flourish per component, reward maximalism earned — not sprayed.</p>
+  </header>
+
+  <section>
+    <h2 class="section-title">Brand</h2>
+    <p class="section-sub">Five brand tokens. Saturated on purpose — default Ink-900 canvas lets them pop without bleeding into the characters.</p>
+    <div class="grid grid-brand">
+      <div class="swatch"><div class="color" style="background:var(--brand-cookedRed)"></div><div class="meta"><div class="name">brand.cookedRed</div><div class="hex">#FF3B47</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--brand-skibidiCyan)"></div><div class="meta"><div class="name">brand.skibidiCyan</div><div class="hex">#00E0FF</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--brand-gyattYellow)"></div><div class="meta"><div class="name">brand.gyattYellow</div><div class="hex">#FFD23A</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--brand-sigmaPurple)"></div><div class="meta"><div class="name">brand.sigmaPurple</div><div class="hex">#A445FF</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--brand-brainrotLime)"></div><div class="meta"><div class="name">brand.brainrotLime</div><div class="hex">#B6FF3C</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Rarity</h2>
+    <p class="section-sub">Each tier is color + a shape glyph. Rarity <em>must never</em> rely on color alone — accessibility.</p>
+    <div class="rarity-row">
+      <div class="rarity-card"><div class="glyph" style="color:var(--rarity-common)">○</div><div class="label">Common</div><div class="hex">#A8AEBF</div></div>
+      <div class="rarity-card"><div class="glyph" style="color:var(--rarity-uncommon)">◇</div><div class="label">Uncommon</div><div class="hex">#42D17B</div></div>
+      <div class="rarity-card"><div class="glyph" style="color:var(--rarity-rare)">▲</div><div class="label">Rare</div><div class="hex">#3D8BFF</div></div>
+      <div class="rarity-card"><div class="glyph" style="color:var(--rarity-epic)">★</div><div class="label">Epic</div><div class="hex">#B56AFF</div></div>
+      <div class="rarity-card"><div class="glyph" style="color:var(--rarity-legendary)">✧</div><div class="label">Legendary</div><div class="hex">#FFB84A</div></div>
+      <div class="rarity-card" style="background:linear-gradient(135deg,#FF3B47,#FFD23A,#00E0FF,#A445FF);color:var(--ink-900)"><div class="glyph">👑</div><div class="label">Mythic</div><div class="hex">animated</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Semantic</h2>
+    <div class="grid grid-brand">
+      <div class="swatch"><div class="color" style="background:var(--semantic-success)"></div><div class="meta"><div class="name">success</div><div class="hex">#42D17B</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--semantic-warning)"></div><div class="meta"><div class="name">warning</div><div class="hex">#FFB84A</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--semantic-danger)"></div><div class="meta"><div class="name">danger</div><div class="hex">#FF3B47</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--semantic-info)"></div><div class="meta"><div class="name">info</div><div class="hex">#00E0FF</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Ink scale</h2>
+    <p class="section-sub">9-step neutral scale. Canvas is ink-900; primary panels ink-800; text ink-100.</p>
+    <div class="grid grid-ink">
+      <div class="swatch"><div class="color" style="background:var(--ink-900)"></div><div class="meta"><div class="name">ink.900</div><div class="hex">#0B0D14</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--ink-800)"></div><div class="meta"><div class="name">ink.800</div><div class="hex">#151925</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--ink-700)"></div><div class="meta"><div class="name">ink.700</div><div class="hex">#1E2333</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--ink-600)"></div><div class="meta"><div class="name">ink.600</div><div class="hex">#2A3148</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--ink-500)"></div><div class="meta"><div class="name">ink.500</div><div class="hex">#3A4156</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--ink-400)"></div><div class="meta"><div class="name">ink.400</div><div class="hex">#5B6279</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--ink-300)"></div><div class="meta"><div class="name">ink.300</div><div class="hex">#8A91A8</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--ink-200)"></div><div class="meta"><div class="name">ink.200</div><div class="hex">#B8BED0</div></div></div>
+      <div class="swatch"><div class="color" style="background:var(--ink-100)"></div><div class="meta"><div class="name">ink.100</div><div class="hex">#D6DAE6</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Typography</h2>
+    <p class="section-sub">Display type is always uppercase with a 2–3px ink-900 stroke. That's the sticker signature.</p>
+    <div>
+      <div class="type-row"><div class="type-token">font.display.xl</div><div class="t-display-xl" style="color:var(--brand-cookedRed)">CERTIFIED W</div></div>
+      <div class="type-row"><div class="type-token">font.display.lg</div><div class="t-display-lg" style="color:var(--brand-gyattYellow)">LEVEL UP</div></div>
+      <div class="type-row"><div class="type-token">font.h1</div><div class="t-h1">Tralalero Tralala</div></div>
+      <div class="type-row"><div class="type-token">font.h2</div><div class="t-h2">Choose your brainrot</div></div>
+      <div class="type-row"><div class="type-token">font.h3</div><div class="t-h3">Shop refresh in 12s</div></div>
+      <div class="type-row"><div class="type-token">font.body.lg</div><div class="t-body-lg">Place units on the board during planning. Combat starts automatically.</div></div>
+      <div class="type-row"><div class="type-token">font.body.md</div><div class="t-body-md">Not enough gold. Level up to 5 to unlock tier-4 units.</div></div>
+      <div class="type-row"><div class="type-token">font.caption</div><div class="t-caption" style="color:var(--ink-300)">Shift-click to sell.</div></div>
+      <div class="type-row"><div class="type-token">font.num.lg</div><div class="t-num-lg" style="color:var(--brand-gyattYellow)">47</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Buttons</h2>
+    <p class="section-sub">Primary / secondary / ghost / destructive across sizes sm → mega. Hover to feel the lift.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm">Buy</button>
+      <button class="btn btn-primary">Lock in</button>
+      <button class="btn btn-primary btn-lg">Confirm</button>
+      <button class="btn btn-primary btn-mega">PLAY</button>
+    </div>
+    <div class="btn-row" style="margin-top: var(--s4);">
+      <button class="btn btn-secondary">Cancel</button>
+      <button class="btn btn-ghost">Skip</button>
+      <button class="btn btn-destructive">Surrender</button>
+      <button class="btn btn-primary" disabled>Disabled</button>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Unit cards</h2>
+    <p class="section-sub">Rarity frame is the most load-bearing visual. Star tier badge sits under the portrait.</p>
+    <div class="btn-row" style="gap: var(--s6)">
+      <div class="unit-card rarity-rare">
+        <div class="cost">2</div>
+        <div class="portrait">🦈</div>
+        <div class="stars">★</div>
+        <div class="body">
+          <div class="name">Tralalero Tralala</div>
+          <div class="traits"><span class="trait-chip">Aquatic</span><span class="trait-chip">Sprinter</span></div>
+        </div>
+      </div>
+      <div class="unit-card rarity-epic">
+        <div class="cost">4</div>
+        <div class="portrait" style="background:linear-gradient(135deg,#6a3a1a,#3a1a6a)">🐊</div>
+        <div class="stars">★★</div>
+        <div class="body">
+          <div class="name">Bombardiro Crocodilo</div>
+          <div class="traits"><span class="trait-chip">Reptile</span><span class="trait-chip">Bomber</span></div>
+        </div>
+      </div>
+      <div class="unit-card rarity-legendary">
+        <div class="cost">5</div>
+        <div class="portrait" style="background:linear-gradient(135deg,#5a1a1a,#5a4a1a)">🕰️</div>
+        <div class="stars">★★★</div>
+        <div class="body">
+          <div class="name">Tung Tung Tung Sahur</div>
+          <div class="traits"><span class="trait-chip">Ritual</span><span class="trait-chip">Drummer</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Shop row</h2>
+    <p class="section-sub">Five slots along the bottom-center. Outlined by rarity. Locked slots get a cyan double-stroke and a lock icon.</p>
+    <div class="shop">
+      <div class="shop-slot rarity-common"><div class="s-port">🐸</div><div class="s-cost">1</div><div class="s-name">Croco Frog</div></div>
+      <div class="shop-slot rarity-uncommon"><div class="s-port">🍌</div><div class="s-cost">2</div><div class="s-name">Bananina</div></div>
+      <div class="shop-slot rarity-rare locked"><div class="s-port">🦈</div><div class="s-cost">3</div><div class="s-name">Tralalero</div></div>
+      <div class="shop-slot rarity-epic"><div class="s-port">🐊</div><div class="s-cost">4</div><div class="s-name">Bombardiro</div></div>
+      <div class="shop-slot rarity-legendary"><div class="s-port">🕰️</div><div class="s-cost">5</div><div class="s-name">Tung Sahur</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">HUD bars</h2>
+    <div class="row2">
+      <div>
+        <p class="section-sub">Player / unit HP (ally)</p>
+        <div class="bar bar-hp"><div class="fill"></div></div>
+        <p class="section-sub" style="margin-top: var(--s5)">Mana</p>
+        <div class="bar bar-mana"><div class="fill"></div></div>
+        <p class="section-sub" style="margin-top: var(--s5)">XP</p>
+        <div class="bar bar-xp"><div class="fill"></div></div>
+      </div>
+      <div>
+        <p class="section-sub">Round timer</p>
+        <div class="bar bar-timer"><div class="fill"></div></div>
+        <p class="section-sub" style="margin-top: var(--s5)">Enemy HP (chevron-striped, colorblind-safe)</p>
+        <div class="bar bar-hp-enemy"><div class="fill"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Trait badges · Currency · Tooltip · Toast</h2>
+    <div class="row2">
+      <div>
+        <div class="btn-row">
+          <span class="trait-badge tier-bronze"><span class="hex"></span>Aquatic<span class="count">2/3</span></span>
+          <span class="trait-badge tier-silver"><span class="hex"></span>Bomber<span class="count">3/3</span></span>
+          <span class="trait-badge tier-gold"><span class="hex"></span>Ritual<span class="count">4/4</span></span>
+          <span class="trait-badge tier-chromatic"><span class="hex"></span>Brainrot<span class="count">6/6</span></span>
+        </div>
+        <div class="btn-row" style="margin-top: var(--s6)">
+          <span class="currency"><span class="coin"></span><span class="n">47</span></span>
+          <span class="currency" style="border-color:var(--brand-sigmaPurple)"><span class="coin" style="background:var(--brand-sigmaPurple)"></span><span class="n">1,240</span></span>
+        </div>
+      </div>
+      <div>
+        <div class="tooltip">
+          <h4 style="color:var(--brand-gyattYellow)">Bombardiro Crocodilo</h4>
+          <p>Drops a nuclear mixtape on the lowest-HP enemy, dealing 220/330/500 damage and silencing for 2s. <br><br><em style="color:var(--ink-300)">Tier 4 · Reptile / Bomber</em></p>
+        </div>
+        <div class="toast" style="margin-top: var(--s5)">
+          <span class="ico">✓</span><span>Gained <strong style="font-family:var(--ff-num);color:var(--brand-gyattYellow)">+3</strong> gold from streak.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Reward burst</h2>
+    <p class="section-sub">Signature moment. Reserved for level-ups, legendary+ pulls, streak wins, round wins. Never fires on hovers.</p>
+    <div class="btn-row">
+      <div class="reward">
+        <div class="word">CERTIFIED W</div>
+        <div class="emoji e1">🔥</div>
+        <div class="emoji e2">💸</div>
+        <div class="emoji e3">🦈</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Screen patterns</h2>
+    <p class="section-sub">Ultra-simplified layout blocks — meant as placement references, not finished art.</p>
+    <div class="row2">
+      <div>
+        <div class="t-h3" style="margin-bottom: var(--s3)">Core match UI</div>
+        <div class="mock mock-match">
+          <div class="zone z-topL">Scoreboard</div>
+          <div class="zone z-topC">Round · Timer</div>
+          <div class="zone z-topR">Settings</div>
+          <div class="zone z-left">Traits</div>
+          <div class="zone z-board">Hex Board</div>
+          <div class="zone z-right">Items</div>
+          <div class="zone z-botL">Gold / Lvl</div>
+          <div class="zone z-shop">Shop (5) · Reroll · XP</div>
+          <div class="zone z-botR">Bench</div>
+        </div>
+      </div>
+      <div>
+        <div class="t-h3" style="margin-bottom: var(--s3)">Main menu</div>
+        <div class="mock mock-menu">
+          <div class="zone">Nav · Currency</div>
+          <div class="zone z-hero">Rotating brainrot hero · PLAY</div>
+          <div class="zone">Pass progress · News · Social</div>
+        </div>
+      </div>
+    </div>
+    <div class="row2" style="margin-top: var(--s6)">
+      <div>
+        <div class="t-h3" style="margin-bottom: var(--s3)">Collection / Dex</div>
+        <div class="mock" style="grid-template-rows: 50px 1fr">
+          <div class="zone">Filters · Cost · Trait · Owned</div>
+          <div class="zone" style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:6px">
+            <div class="zone" style="aspect-ratio: 1/1">🦈</div><div class="zone" style="aspect-ratio: 1/1">🐊</div><div class="zone" style="aspect-ratio: 1/1">🕰️</div><div class="zone" style="aspect-ratio: 1/1">🍌</div><div class="zone" style="aspect-ratio: 1/1">🐸</div><div class="zone" style="aspect-ratio: 1/1">?</div>
+            <div class="zone" style="aspect-ratio: 1/1">?</div><div class="zone" style="aspect-ratio: 1/1">?</div><div class="zone" style="aspect-ratio: 1/1">?</div><div class="zone" style="aspect-ratio: 1/1">?</div><div class="zone" style="aspect-ratio: 1/1">?</div><div class="zone" style="aspect-ratio: 1/1">?</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="t-h3" style="margin-bottom: var(--s3)">FTUE spotlight</div>
+        <div class="mock mock-ftue">
+          <div class="zone z-bg" style="aspect-ratio: unset; height: 100%">Gameplay underneath</div>
+          <div class="spot"></div>
+          <div class="coach"><strong>Drag a unit to the board.</strong><br>You earn interest by saving gold. Got it →</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Do / Don't</h2>
+    <div class="do-dont">
+      <div class="card do">
+        <h4>Do</h4>
+        <ul>
+          <li>Pair every rarity color with a shape glyph.</li>
+          <li>Use one flourish per component.</li>
+          <li>Reserve reward-burst for earned moments.</li>
+          <li>Keep LuckiestGuy for display / stingers only.</li>
+          <li>Test text at UIScale 1.4 before shipping.</li>
+          <li>Put Accessibility as a first-class Settings tab.</li>
+        </ul>
+      </div>
+      <div class="card dont">
+        <h4>Don't</h4>
+        <ul>
+          <li>Rely on red vs. blue alone for team or rarity.</li>
+          <li>Stack bounce + glow + sparkle on one button.</li>
+          <li>Fire reward-burst on hover or routine clicks.</li>
+          <li>Use LuckiestGuy or Impact for body copy.</li>
+          <li>Default to "…" truncation for overflow.</li>
+          <li>Bury motion-reduction under Advanced.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">
+    Full spec: <a href="./design-system.md">design-system.md</a> ·
+    Figma / Tokens Studio import: <a href="./tokens.json">tokens.json</a>
+  </div>
+
+</div>
+</body>
+</html>
