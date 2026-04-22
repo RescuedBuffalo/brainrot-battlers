@@ -16,6 +16,7 @@ local AbilityService = require(serverFolder:WaitForChild("AbilityService"))
 local CombatEngine   = require(serverFolder:WaitForChild("CombatEngine"))
 local ShopService    = require(serverFolder:WaitForChild("ShopService"))
 local CrateService   = require(serverFolder:WaitForChild("CrateService"))
+local LobbyService   = require(serverFolder:WaitForChild("LobbyService"))
 local GameManager    = require(serverFolder:WaitForChild("GameManager"))
 
 local deps = {
@@ -25,6 +26,7 @@ local deps = {
     CombatEngine = CombatEngine,
     ShopService = ShopService,
     CrateService = CrateService,
+    LobbyService = LobbyService,
     GameManager = GameManager,
     Remotes = ReplicatedStorage:WaitForChild("Remotes"),
     Shared = sharedFolder,
@@ -36,6 +38,7 @@ AbilityService.Init(deps)
 CombatEngine.Init(deps)
 ShopService.Init(deps)
 CrateService.Init(deps)
+LobbyService.Init(deps)
 GameManager.Init(deps)
 
 -- ---------- remote wiring ---------- --
