@@ -67,7 +67,7 @@ end
 local function newProfile(): Profile
     local now = os.time()
     return {
-        version = 1,
+        version = 2,
         collection = {},
         bestRound = 0,
         totalWins = 0,
@@ -75,13 +75,20 @@ local function newProfile(): Profile
         lastPlayed = now,
         sessionLock = nil,
         tutorialDone = false,
+        -- Phase 12 additions: persist active run state so a leave/rejoin
+        -- within the same session resumes at the same node.
+        runState = nil,  -- { runMap, currentNodeId, activeCards, combatsWon } | nil
     }
 end
 
--- Migrate older profiles (pre-Phase 11) that predate tutorialDone.
+-- Migrate profiles across schema versions. v1 -> v2 adds runState.
 local function migrate(p: any): Profile
     if p.tutorialDone == nil then
         p.tutorialDone = false
+    end
+    if (p.version or 1) < 2 then
+        p.version = 2
+        p.runState = nil
     end
     return p
 end
@@ -266,6 +273,15 @@ end
 function DataService.SetTutorialDone(userId: number)
     local p = DataService.Load(userId)
     p.tutorialDone = true
+    dirty[userId] = true
+end
+
+-- Persist the run-in-progress (runMap, currentNodeId, activeCards,
+-- combatsWon) so the player resumes at the same node on relogin.
+-- Pass nil on run end to clear.
+function DataService.SetRunState(userId: number, runState: any?)
+    local p = DataService.Load(userId)
+    p.runState = runState
     dirty[userId] = true
 end
 

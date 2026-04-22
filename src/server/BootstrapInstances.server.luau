@@ -28,6 +28,9 @@ local REMOTE_EVENTS = {
     "BuyUnit", "SellUnit", "PlaceUnit", "RerollShop",
     "BuyXP", "StartCombat", "NextRound", "OpenCrate",
     "StateUpdate", "CombatEvent", "CrateReveal",
+    -- Phase 12 additions
+    "SelectNextNode",   -- client -> server, { nodeId }
+    "CardChoice",       -- client -> server, { cardId, targetUnitInstanceId? }
 }
 for _, name in ipairs(REMOTE_EVENTS) do
     if not remotes:FindFirstChild(name) then

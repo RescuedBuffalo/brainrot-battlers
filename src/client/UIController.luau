@@ -210,6 +210,27 @@ local function buildTopHud(): Frame
 
     streakLabel = chip("",      90, Color3.fromRGB(100, 100, 130))
     armyLabel   = chip("0/2",   90, Color3.fromRGB(60, 120, 80))
+
+    -- View Map button: always visible in TopHud; click toggles the map overlay
+    local mapBtn = Instance.new("TextButton")
+    mapBtn.Name = "ViewMapBtn"
+    mapBtn.Size = UDim2.new(0, 110, 1, -8)
+    mapBtn.BackgroundColor3 = Color3.fromRGB(90, 80, 140)
+    mapBtn.Text = "🗺️ Map"
+    mapBtn.TextColor3 = Color3.new(1, 1, 1)
+    mapBtn.Font = Enum.Font.GothamBold
+    mapBtn.TextScaled = true
+    mapBtn.BorderSizePixel = 0
+    mapBtn.AutoButtonColor = true
+    makeCorner(mapBtn, 6)
+    makePadding(mapBtn, 4)
+    mapBtn.MouseButton1Click:Connect(function()
+        local pg = player:FindFirstChildOfClass("PlayerGui")
+        local mainUI = pg and pg:FindFirstChild("MainUI")
+        local overlay = mainUI and mainUI:FindFirstChild("RunMapOverlay")
+        if overlay then overlay.Visible = not overlay.Visible end
+    end)
+    mapBtn.Parent = hud
     return hud
 end
 
@@ -1108,17 +1129,20 @@ end
 
 local function renderOverlays(state: any)
     local inCombat = state.phase == "combat"
-    local inPostCombat = state.phase == "postcombat"
+    local inPostCombat = state.phase == "postcombat" or state.phase == "shopNode"
     local isEnd = state.phase == "victory" or state.phase == "defeat"
+    -- Phase 12: shop UI is reused for both pre-combat shop (phase=shop) AND
+    -- standalone shop nodes (phase=shopNode). Start Combat button only shows
+    -- in the former; shopNode gets a "Leave Shop" button on the overlay.
 
     combatOverlay.Visible = inCombat
     if inCombat then
-        local lr = state.lastResult
         combatRoundLabel.Text = ("⚔️ Round %d"):format(state.round)
     end
 
-    postCombatOverlay.Visible = inPostCombat
-    if inPostCombat and state.lastResult then
+    -- PostCombatOverlay now doubles as the "continue" prompt for shopNode too
+    postCombatOverlay.Visible = (state.phase == "postcombat") or (state.phase == "shopNode")
+    if state.phase == "postcombat" and state.lastResult then
         local r = state.lastResult
         postCombatLabel.Text = r.outcome == "win" and "🏆 VICTORY" or "💀 DEFEAT"
         postCombatLabel.TextColor3 = r.outcome == "win"
@@ -1128,19 +1152,26 @@ local function renderOverlays(state: any)
         postCombatIncome.Text = ("Income: base %d + interest %d + streak %d + stolen %d"):format(
             ib.base or 0, ib.interest or 0, ib.streak or 0, ib.stolen or 0
         )
+        nextRoundBtn.Text = "➡️ CONTINUE"
+    elseif state.phase == "shopNode" then
+        postCombatLabel.Text = "🛒 Shop Node"
+        postCombatLabel.TextColor3 = Color3.fromRGB(120, 200, 240)
+        postCombatIncome.Text = "Browse, buy, reroll. No fight here."
+        nextRoundBtn.Text = "➡️ LEAVE SHOP"
     end
 
     endGameOverlay.Visible = isEnd
     if isEnd then
         endGameLabel.Text = state.phase == "victory"
-            and ("🏆 YOU WON!\nBest round: %d  |  Wins: %d"):format(state.bestRound, state.totalWins)
-            or ("💀 DEFEAT\nMade it to round %d"):format(state.round)
+            and ("🏆 YOU WON!\nCombats won: %d  |  Total wins: %d"):format(state.combatsWon or 0, state.totalWins)
+            or ("💀 DEFEAT\nCombats won: %d"):format(state.combatsWon or 0)
     end
 
-    -- Lock shop interaction during combat
+    -- Lock shop slots during combat only
     for _, slot in pairs(shopSlots) do slot.Active = not inCombat end
     rerollBtn.Active = not inCombat
     buyXpBtn.Active = not inCombat
+    -- FIGHT button only shows in pre-combat shop phase
     startCombatBtn.Visible = state.phase == "shop"
 end
 

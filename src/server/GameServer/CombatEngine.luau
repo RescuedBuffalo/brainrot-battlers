@@ -182,7 +182,11 @@ end
 
 -- ---------- trait resolution ---------- --
 
-local function resolveTraits(boardUnits)
+-- mods.traitThresholdReduction[traitId] (optional) lets a forge card
+-- (ohio_energy: -1 threshold) make tiers activate with fewer units.
+local function resolveTraits(boardUnits, mods)
+    mods = mods or {}
+    local thresholdReduction = mods.traitThresholdReduction or {}
     local counts: {[string]: {[string]: true}} = {}
     for _, u in ipairs(boardUnits) do
         local def = UnitDefinitions[u.unitId]
@@ -199,14 +203,44 @@ local function resolveTraits(boardUnits)
         for _ in pairs(unitSet) do n += 1 end
         local td = TraitDefinitions[traitId]
         if td then
+            local reduction = thresholdReduction[traitId] or 0
             local activeTier = nil
             for i, tier in ipairs(td.tiers) do
-                if n >= tier[1] then activeTier = i - 1 end
+                local required = math.max(1, tier[1] - reduction)
+                if n >= required then activeTier = i - 1 end
             end
             if activeTier ~= nil then active[traitId] = activeTier end
         end
     end
     return active
+end
+
+-- Phase 12: applyCardMods bakes card effects into the actor's stats after
+-- base + trait math. Mods come from CardService.BuildCombatMods.
+--   mods.traitAdBonus[trait]   -> fractional AD bonus for matching units
+--   mods.traitAsBonus[trait]   -> fractional AS bonus (next-combat only)
+--   mods.unitHpBonuses[unitId] -> flat HP bonus for matching units
+local function applyCardMods(actor, mods)
+    if not mods then return end
+    local def = UnitDefinitions[actor.unitId]
+    if not def then return end
+
+    for _, trait in ipairs(def.traits) do
+        local adBonus = (mods.traitAdBonus or {})[trait]
+        if adBonus and adBonus > 0 then
+            actor.atk = actor.atk * (1 + adBonus)
+        end
+        local asBonus = (mods.traitAsBonus or {})[trait]
+        if asBonus and asBonus > 0 then
+            actor.attackSpeed = actor.attackSpeed * (1 + asBonus)
+        end
+    end
+
+    local hpBonus = (mods.unitHpBonuses or {})[actor.unitId]
+    if hpBonus and hpBonus > 0 then
+        actor.hp += hpBonus
+        actor.maxHp += hpBonus
+    end
 end
 
 local function applyTraits(actor, activeTiers)
@@ -239,7 +273,7 @@ local function applyTraits(actor, activeTiers)
     end
 end
 
-local function buildActor(id: number, side: string, unitData, activeTiers)
+local function buildActor(id: number, side: string, unitData, activeTiers, cardMods)
     local def = UnitDefinitions[unitData.unitId]
     assert(def, "buildActor: unknown unitId " .. tostring(unitData.unitId))
     local starMult = Constants.STAR_MULT[unitData.star] or 1
@@ -278,6 +312,10 @@ local function buildActor(id: number, side: string, unitData, activeTiers)
     }
 
     applyTraits(actor, activeTiers)
+    -- Player-side card mods stack on top of trait-adjusted stats.
+    if side == "player" and cardMods then
+        applyCardMods(actor, cardMods)
+    end
     actor.mana = actor.startMana
     return actor
 end
@@ -413,8 +451,9 @@ function CombatEngine.InitStandalone(abilityService)
     AbilityService = abilityService
 end
 
-function CombatEngine.Resolve(playerBoard, enemyBoard, round: number?): Result
+function CombatEngine.Resolve(playerBoard, enemyBoard, round: number?, cardMods: any?): Result
     assert(Constants, "CombatEngine.Init must be called first")
+    cardMods = cardMods or {}
     local engine = {
         tick = 0,
         actors = {},
@@ -423,21 +462,22 @@ function CombatEngine.Resolve(playerBoard, enemyBoard, round: number?): Result
         events = {},
         round = round or 1,
         goldStolen = 0,
-        playerTraits = resolveTraits(playerBoard),
-        enemyTraits = resolveTraits(enemyBoard),
+        playerTraits = resolveTraits(playerBoard, cardMods),
+        enemyTraits = resolveTraits(enemyBoard),  -- enemies never see player mods
+        cardMods = cardMods,
     }
     attachHelpers(engine)
 
     local nextId = 1
     for _, u in ipairs(playerBoard) do
-        local a = buildActor(nextId, "player", u, engine.playerTraits)
+        local a = buildActor(nextId, "player", u, engine.playerTraits, cardMods)
         engine.actors[nextId] = a
         table.insert(engine.actorsList, a)
         engine.tileMap[tileKey(a.x, a.y)] = nextId
         nextId += 1
     end
     for _, u in ipairs(enemyBoard) do
-        local a = buildActor(nextId, "enemy", u, engine.enemyTraits)
+        local a = buildActor(nextId, "enemy", u, engine.enemyTraits, nil)
         engine.actors[nextId] = a
         table.insert(engine.actorsList, a)
         engine.tileMap[tileKey(a.x, a.y)] = nextId
@@ -482,6 +522,35 @@ function CombatEngine.Resolve(playerBoard, enemyBoard, round: number?): Result
                     AbilityService.Cast(engine, actor)
                 end
                 actor.mana = 0
+
+                -- Tralalero Surge hook: when a unit with the configured
+                -- source trait casts, all allies of allyTrait gain mana.
+                -- cardMods.manaShare is set up by CardService.BuildCombatMods.
+                local share = engine.cardMods and engine.cardMods.manaShare
+                if share and actor.side == "player" then
+                    local def = UnitDefinitions[actor.unitId]
+                    local hasSource = false
+                    if def and def.traits then
+                        for _, t in ipairs(def.traits) do
+                            if t == share.sourceTrait then hasSource = true; break end
+                        end
+                    end
+                    if hasSource then
+                        for _, other in ipairs(engine.actorsList) do
+                            if not other.dead and other.side == "player" and other.id ~= actor.id then
+                                local oDef = UnitDefinitions[other.unitId]
+                                if oDef then
+                                    for _, t in ipairs(oDef.traits) do
+                                        if t == share.allyTrait then
+                                            other.mana = math.min(other.maxMana, other.mana + share.amount)
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
                 continue
             end
 

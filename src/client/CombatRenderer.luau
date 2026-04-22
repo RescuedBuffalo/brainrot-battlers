@@ -19,6 +19,10 @@ local Workspace = game:GetService("Workspace")
 local sharedFolder = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(sharedFolder:WaitForChild("Constants"))
 
+-- MomentService is required lazily via Init(deps) to avoid a require-time
+-- dependency (CombatRenderer is referenced by MomentService too).
+local MomentService
+
 local CombatRenderer = {}
 
 local TILE_W = 4
@@ -65,6 +69,23 @@ end
 -- Cheaper than per-frame pivot updates in script and survives Heartbeat hitches.
 local function tweenPivot(model: Model, targetCFrame: CFrame, duration: number)
     if not model.PrimaryPart then return end
+
+    -- Phase 12: if the target is in hit-stop, skip the pivot tween entirely
+    -- for the duration of the freeze. The next move event will start a fresh
+    -- tween post-thaw.
+    if MomentService and MomentService.IsFrozen and MomentService.IsFrozen(model) then
+        return
+    end
+
+    -- Phase 12: visual time dilation. Stretch duration so slow-mo layers
+    -- see a proportionally-longer animation; normal speed = 1.0.
+    if MomentService and MomentService.TimeScale then
+        local scale = MomentService.TimeScale()
+        if scale > 0 and scale < 1 then
+            duration = duration / scale
+        end
+    end
+
     local startCF = model:GetPivot()
     local holder = Instance.new("CFrameValue")
     holder.Value = startCF
@@ -230,6 +251,22 @@ end
 handlers.ability = function(evt)
     local m = actorModels[evt.source]
     if m then flashAbility(m) end
+
+    -- Phase 12: fire a Moment if this unit has one defined. Additive to the
+    -- existing flashAbility + per-ability event handlers below (shoot/aoe/
+    -- dmg), so the moment layers stack on top of the normal visuals.
+    if MomentService and m then
+        local unitId = m:GetAttribute("UnitId")
+        if unitId then
+            MomentService.play(unitId, {
+                sourceActorId = evt.source,
+                sourceModel = m,
+                targetActorId = nil,
+                targetModel = nil,
+                position = m:GetPivot().Position,
+            })
+        end
+    end
 end
 
 handlers.shoot = function(evt)
@@ -307,7 +344,13 @@ handlers.gold = function(_evt) end
 
 -- ---------- public API ---------- --
 
-function CombatRenderer.Init(_deps)
+function CombatRenderer.Init(deps)
+    -- MomentService is optional -- CombatRenderer still works without it
+    -- (Phase 1-11 behavior). Init is called from ClientMain after
+    -- MomentService itself is required.
+    if deps and deps.MomentService then
+        MomentService = deps.MomentService
+    end
 end
 
 function CombatRenderer.PlayEvents(payload)
