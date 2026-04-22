@@ -193,6 +193,16 @@ local function normalizeEnemyBoard(roundIndex: number)
     return out, round.name
 end
 
+-- Shop-phase board preview. Clears the arena and respawns only the player's
+-- current board (no enemies, no ActorIds). Called from handlers that mutate
+-- the board so the world matches state.board.
+local function syncShopVisuals(state: PlayerState)
+    UnitSpawner.ClearAll()
+    for _, u in ipairs(state.board) do
+        UnitSpawner.Spawn(u.unitId, u.star, u.rarity, u.x, u.y, "player")
+    end
+end
+
 local function spawnCombatVisuals(state: PlayerState, enemyBoard)
     UnitSpawner.ClearAll()
     local nextId = 1
@@ -257,6 +267,8 @@ function GameManager.HandleBuyUnit(player: Player, slotIdx: number)
     if not state or state.phase ~= "shop" then return end
     if type(slotIdx) ~= "number" then return end
     if ShopService.Buy(state, slotIdx) then
+        -- A cascading 3-combine can consume a board unit; resync just in case.
+        syncShopVisuals(state)
         broadcast(player.UserId)
     end
 end
@@ -266,6 +278,7 @@ function GameManager.HandleSellUnit(player: Player, source: string, idx: number)
     if not state or state.phase ~= "shop" then return end
     if type(source) ~= "string" or type(idx) ~= "number" then return end
     if ShopService.Sell(state, source, idx) then
+        if source == "board" then syncShopVisuals(state) end
         broadcast(player.UserId)
     end
 end
@@ -283,6 +296,7 @@ function GameManager.HandlePlaceUnit(player: Player, payload: any)
     if type(fromLoc) ~= "string" or type(fromIdx) ~= "number" then return end
     if type(toLoc) ~= "string" then return end
     if ShopService.PlaceUnit(state, fromLoc, fromIdx, toLoc, toIdx or 0, x, y) then
+        syncShopVisuals(state)
         broadcast(player.UserId)
     end
 end
