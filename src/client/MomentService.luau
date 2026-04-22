@@ -256,6 +256,13 @@ function MomentService.Init(deps)
 end
 
 -- context: { sourceActorId, targetActorId, position, amount, targetModel, sourceModel }
+-- NOTE on debugging: MomentService relies on module-local upvalues populated
+-- by Init (MomentDefinitions, vignetteFrame, etc.). If you verify behavior
+-- from Studio's command bar via execute_luau, remember that runs in a
+-- SEPARATE VM from the LocalScripts -- that VM's copy of MomentService has
+-- never had Init called, so play() silently early-returns here. Trigger
+-- plays from a real client context (a CombatEvent, a KeyCode handler, or
+-- a task.delay inside ClientMain) to exercise the actual code path.
 function MomentService.play(name: string, context: any)
     if not MomentDefinitions then return end
     local def = MomentDefinitions.MOMENTS[name]
